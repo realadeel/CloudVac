@@ -1,0 +1,86 @@
+import { Router } from 'express';
+import { resourceCache } from './scan.js';
+
+const router = Router();
+
+router.get('/api/resources', (req, res) => {
+  const profileName = req.query.profile as string;
+  if (!profileName) {
+    res.status(400).json({ error: 'Missing profile parameter' });
+    return;
+  }
+
+  const cached = resourceCache.get(profileName);
+  if (!cached) {
+    res.json({ resources: [], stacks: [], summary: { total: 0, managed: 0, loose: 0, byService: {} } });
+    return;
+  }
+
+  const { resources, stacks } = cached;
+
+  // Apply filters
+  const service = req.query.service as string | undefined;
+  const region = req.query.region as string | undefined;
+  const managed = req.query.managed as string | undefined;
+  const search = req.query.search as string | undefined;
+
+  let filtered = resources;
+
+  if (service) {
+    const services = service.split(',');
+    filtered = filtered.filter((r) => services.includes(r.service));
+  }
+  if (region) {
+    const regions = region.split(',');
+    filtered = filtered.filter((r) => regions.includes(r.region));
+  }
+  if (managed !== undefined) {
+    const isMgd = managed === 'true';
+    filtered = filtered.filter((r) => r.managed === isMgd);
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter((r) => r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
+  }
+
+  // Summary
+  const byService: Record<string, number> = {};
+  for (const r of filtered) {
+    byService[r.service] = (byService[r.service] ?? 0) + 1;
+  }
+
+  res.json({
+    resources: filtered,
+    stacks,
+    summary: {
+      total: filtered.length,
+      managed: filtered.filter((r) => r.managed).length,
+      loose: filtered.filter((r) => !r.managed && r.type !== 'cloudformation-stack').length,
+      byService,
+    },
+  });
+});
+
+router.get('/api/resources/:id', (req, res) => {
+  const profileName = req.query.profile as string;
+  if (!profileName) {
+    res.status(400).json({ error: 'Missing profile parameter' });
+    return;
+  }
+
+  const cached = resourceCache.get(profileName);
+  if (!cached) {
+    res.status(404).json({ error: 'No scan data. Run a scan first.' });
+    return;
+  }
+
+  const resource = cached.resources.find((r) => r.id === req.params.id);
+  if (!resource) {
+    res.status(404).json({ error: 'Resource not found' });
+    return;
+  }
+
+  res.json(resource);
+});
+
+export default router;

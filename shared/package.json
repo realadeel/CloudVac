@@ -1,0 +1,7 @@
+{
+  "name": "aws-auditor-shared",
+  "private": true,
+  "type": "module",
+  "main": "types.ts",
+  "types": "types.ts"
+}
