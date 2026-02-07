@@ -16,6 +16,7 @@ import { deleteSNSTopic } from './strategies/sns.js';
 import { deleteSQSQueue } from './strategies/sqs.js';
 import { deleteRestApi, deleteHttpApi } from './strategies/apigateway.js';
 import { DELETE_CONCURRENCY } from '../config.js';
+import { deleteBucketStatsEntry } from '../db/index.js';
 
 type Emit = (event: string, data: unknown) => void;
 
@@ -122,6 +123,11 @@ export async function executeDeletion(
           await handler(profile, node.resource, (msg) => {
             emit('progress', { id: node.resource.id, message: msg });
           });
+
+          // Clear cached bucket stats when an S3 bucket is deleted
+          if (node.resource.type === 's3-bucket') {
+            deleteBucketStatsEntry(profile.name, node.resource.name);
+          }
 
           completed++;
           emit('deleted', {

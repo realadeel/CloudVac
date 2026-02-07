@@ -6,17 +6,19 @@ import {
 import type { AWSProfile, Resource } from '../../../../shared/types.js';
 import * as clients from '../../aws/clients.js';
 
-export async function deleteS3Bucket(
+/**
+ * Empty an S3 bucket (all object versions + delete markers).
+ * Can be called standalone from the "Empty Bucket" API.
+ */
+export async function emptyS3Bucket(
   profile: AWSProfile,
   resource: Resource,
   emit?: (msg: string) => void
-): Promise<void> {
-  // S3 client uses the bucket's region
+): Promise<number> {
   const region = (resource.metadata.bucketRegion as string) || resource.region;
   const client = clients.s3(profile, region as any);
   const bucketName = resource.name;
 
-  // Empty the bucket first (including versions and delete markers)
   emit?.(`Emptying bucket "${bucketName}"...`);
 
   let totalDeleted = 0;
@@ -57,7 +59,23 @@ export async function deleteS3Bucket(
     hasMore = !!(listResp.IsTruncated);
   }
 
-  // Delete the bucket
-  emit?.(`Deleting bucket "${bucketName}"...`);
-  await client.send(new DeleteBucketCommand({ Bucket: bucketName }));
+  emit?.(`Bucket "${bucketName}" is now empty (${totalDeleted} objects removed).`);
+  return totalDeleted;
+}
+
+/**
+ * Empty and delete an S3 bucket.
+ */
+export async function deleteS3Bucket(
+  profile: AWSProfile,
+  resource: Resource,
+  emit?: (msg: string) => void
+): Promise<void> {
+  await emptyS3Bucket(profile, resource, emit);
+
+  const region = (resource.metadata.bucketRegion as string) || resource.region;
+  const client = clients.s3(profile, region as any);
+
+  emit?.(`Deleting bucket "${resource.name}"...`);
+  await client.send(new DeleteBucketCommand({ Bucket: resource.name }));
 }

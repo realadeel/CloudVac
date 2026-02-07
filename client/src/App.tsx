@@ -4,6 +4,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ResourcesPage } from './pages/ResourcesPage';
 import { DeletionPage } from './pages/DeletionPage';
 import { LogsPage } from './pages/LogsPage';
+import { BucketDetailPage } from './pages/BucketDetailPage';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/resources" element={<ResourcesPage />} />
+          <Route path="/s3/:bucketName" element={<BucketDetailPage />} />
           <Route path="/deletion" element={<DeletionPage />} />
           <Route path="/logs" element={<LogsPage />} />
         </Route>

@@ -1,4 +1,6 @@
 import { Search, X } from 'lucide-react';
+import { formatResourceType } from '../../lib/format';
+import type { Resource } from '../../../../shared/types';
 
 const SERVICES = [
   'ec2', 'rds', 'elb', 'ebs', 'nat', 'eip', 'lambda', 's3',
@@ -10,6 +12,7 @@ interface Filters {
   search: string;
   services: string[];
   regions: string[];
+  types: string[];
   managed: 'all' | 'managed' | 'loose';
 }
 
@@ -18,12 +21,25 @@ interface Props {
   onChange: (filters: Filters) => void;
   totalCount: number;
   filteredCount: number;
+  resources: Resource[];
 }
 
-export function FilterBar({ filters, onChange, totalCount, filteredCount }: Props) {
+export function FilterBar({ filters, onChange, totalCount, filteredCount, resources }: Props) {
   const hasActiveFilters =
-    filters.search !== '' || filters.services.length > 0 || filters.regions.length > 0 || filters.managed !== 'all';
+    filters.search !== '' || filters.services.length > 0 || filters.regions.length > 0 || filters.types.length > 0 || filters.managed !== 'all';
   const isFiltered = hasActiveFilters && filteredCount !== totalCount;
+
+  // Compute available resource types based on current service filter
+  const availableTypes = (() => {
+    let pool = resources;
+    if (filters.services.length > 0) {
+      pool = pool.filter((r) => filters.services.includes(r.service));
+    }
+    const typeSet = new Set(pool.map((r) => r.type));
+    return [...typeSet].sort();
+  })();
+  // Only show type filter when there are multiple types to choose from
+  const showTypeFilter = availableTypes.length > 1;
 
   return (
     <div className="space-y-2">
@@ -51,7 +67,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount }: Prop
         {/* Service filter */}
         <select
           value={filters.services.length === 0 ? '' : filters.services[0]}
-          onChange={(e) => onChange({ ...filters, services: e.target.value ? [e.target.value] : [] })}
+          onChange={(e) => onChange({ ...filters, services: e.target.value ? [e.target.value] : [], types: [] })}
           className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
             filters.services.length > 0
               ? 'bg-accent/15 border-accent/40 text-accent font-medium'
@@ -65,6 +81,26 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount }: Prop
             </option>
           ))}
         </select>
+
+        {/* Resource type filter */}
+        {showTypeFilter && (
+          <select
+            value={filters.types.length === 0 ? '' : filters.types[0]}
+            onChange={(e) => onChange({ ...filters, types: e.target.value ? [e.target.value] : [] })}
+            className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
+              filters.types.length > 0
+                ? 'bg-accent/15 border-accent/40 text-accent font-medium'
+                : 'bg-bg-tertiary border-border text-text-primary'
+            }`}
+          >
+            <option value="">All Types</option>
+            {availableTypes.map((t) => (
+              <option key={t} value={t}>
+                {formatResourceType(t)}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Region filter */}
         <select
@@ -104,7 +140,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount }: Prop
         {/* Clear all */}
         {hasActiveFilters && (
           <button
-            onClick={() => onChange({ search: '', services: [], regions: [], managed: 'all' })}
+            onClick={() => onChange({ search: '', services: [], regions: [], types: [], managed: 'all' })}
             className="flex items-center gap-1.5 px-2.5 py-2 text-xs text-text-muted hover:text-text-primary rounded-lg hover:bg-bg-tertiary transition-colors"
           >
             <X size={13} />
@@ -125,7 +161,18 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount }: Prop
               className="inline-flex items-center gap-1 px-2 py-0.5 font-medium bg-accent/15 text-accent rounded border border-accent/30"
             >
               {s.toUpperCase()}
-              <button onClick={() => onChange({ ...filters, services: filters.services.filter((x) => x !== s) })}>
+              <button onClick={() => onChange({ ...filters, services: filters.services.filter((x) => x !== s), types: [] })}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+          {filters.types.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 px-2 py-0.5 font-medium bg-info/15 text-info rounded border border-info/30"
+            >
+              {formatResourceType(t)}
+              <button onClick={() => onChange({ ...filters, types: filters.types.filter((x) => x !== t) })}>
                 <X size={11} />
               </button>
             </span>

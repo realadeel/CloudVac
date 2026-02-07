@@ -6,6 +6,8 @@ import costRoutes from './routes/costs.js';
 import scanRoutes from './routes/scan.js';
 import resourceRoutes from './routes/resources.js';
 import deleteRoutes from './routes/delete.js';
+import emptyBucketRoutes from './routes/empty-bucket.js';
+import s3Routes from './routes/s3.js';
 
 const app = express();
 
@@ -17,11 +19,13 @@ app.use(costRoutes);
 app.use(scanRoutes);
 app.use(resourceRoutes);
 app.use(deleteRoutes);
+app.use(emptyBucketRoutes);
+app.use(s3Routes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {
-  console.log(`AWS Auditor server running on http://localhost:${PORT}`);
+  console.log(`CloudVac server running on http://localhost:${PORT}`);
 });

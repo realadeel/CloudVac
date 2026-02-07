@@ -19,9 +19,11 @@ export function Badge({ label, variant }: { label: string; variant?: string }) {
   const key = variant ?? label.toLowerCase().split(':')[0];
   const classes = variants[key] ?? variants.default;
 
+  const display = label.charAt(0).toUpperCase() + label.slice(1);
+
   return (
     <span className={cn('inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md border', classes)}>
-      {label}
+      {display}
     </span>
   );
 }

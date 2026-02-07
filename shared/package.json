@@ -1,5 +1,5 @@
 {
-  "name": "aws-auditor-shared",
+  "name": "cloudvac-shared",
   "private": true,
   "type": "module",
   "main": "types.ts",

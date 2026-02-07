@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { ArrowUpDown, ChevronRight, Trash2, Server } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, Trash2, Server, HardDrive, FolderOpen, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useScanStore } from '../../stores/scan-store';
 import { useDeletionStore } from '../../stores/deletion-store';
+import { useBucketStore } from '../../stores/bucket-store';
+import { useProfileStore } from '../../stores/profile-store';
 import { ServiceIcon } from '../shared/ServiceIcon';
 import { Badge } from '../shared/Badge';
-import { formatRelativeDate, truncate } from '../../lib/format';
+import { formatRelativeDate, formatBytes, formatNumber, truncate, formatResourceType } from '../../lib/format';
 import { FilterBar, type Filters } from './FilterBar';
 import { ResourceDetail } from './ResourceDetail';
 import { EmptyState } from '../shared/EmptyState';
@@ -15,7 +17,7 @@ type SortDir = 'asc' | 'desc';
 
 const COLUMNS: { key: SortKey; label: string; className: string }[] = [
   { key: 'name', label: 'Resource', className: 'w-[40%]' },
-  { key: 'service', label: 'Service', className: 'w-[12%]' },
+  { key: 'service', label: 'Type', className: 'w-[12%]' },
   { key: 'region', label: 'Region', className: 'w-[14%]' },
   { key: 'status', label: 'Status', className: 'w-[16%]' },
   { key: 'createdAt', label: 'Created', className: 'w-[12%]' },
@@ -28,9 +30,14 @@ export function ResourceTable() {
   const addToQueue = useDeletionStore((s) => s.addToQueue);
   const removeFromQueue = useDeletionStore((s) => s.removeFromQueue);
   const removeMultipleFromQueue = useDeletionStore((s) => s.removeMultipleFromQueue);
+  const profile = useProfileStore((s) => s.selectedProfile);
+  const bucketStats = useBucketStore((s) => s.stats);
+  const statsLoading = useBucketStore((s) => s.statsLoading);
+  const statsErrors = useBucketStore((s) => s.statsErrors);
+  const fetchStats = useBucketStore((s) => s.fetchStats);
   const navigate = useNavigate();
 
-  const [filters, setFilters] = useState<Filters>({ search: '', services: [], regions: [], managed: 'all' });
+  const [filters, setFilters] = useState<Filters>({ search: '', services: [], regions: [], types: [], managed: 'all' });
   const [sortKey, setSortKey] = useState<SortKey>('service');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -43,6 +50,9 @@ export function ResourceTable() {
   }
   if (filters.services.length > 0) {
     filtered = filtered.filter((r) => filters.services.includes(r.service));
+  }
+  if (filters.types.length > 0) {
+    filtered = filtered.filter((r) => filters.types.includes(r.type));
   }
   if (filters.regions.length > 0) {
     filtered = filtered.filter((r) => filters.regions.includes(r.region));
@@ -74,7 +84,7 @@ export function ResourceTable() {
   const someSelectedOnPage = selectedOnPage.size > 0 && !allSelectedOnPage;
 
   const toggleAll = () => {
-    if (allSelectedOnPage) {
+    if (allSelectedOnPage || someSelectedOnPage) {
       removeMultipleFromQueue(filtered.map((r) => r.id));
     } else {
       addToQueue(filtered.map((r) => r.id));
@@ -98,7 +108,7 @@ export function ResourceTable() {
       {/* Toolbar: filters + bulk action */}
       <div className="mb-4 flex items-start gap-3">
         <div className="flex-1">
-          <FilterBar filters={filters} onChange={setFilters} totalCount={resources.length} filteredCount={filtered.length} />
+          <FilterBar filters={filters} onChange={setFilters} totalCount={resources.length} filteredCount={filtered.length} resources={resources} />
         </div>
         {selectedOnPage.size > 0 && (
           <button
@@ -135,7 +145,7 @@ export function ResourceTable() {
               <ArrowUpDown size={11} className={sortKey === col.key ? 'text-accent' : 'opacity-30'} />
             </button>
           ))}
-          <div className="w-6 shrink-0" />
+          <div className="w-[70px] shrink-0" />
         </div>
 
         {/* Rows */}
@@ -178,8 +188,8 @@ export function ResourceTable() {
                       ) : null}
                     </div>
 
-                    {/* Service */}
-                    <div className="w-[12%] text-xs text-text-secondary">{r.service}</div>
+                    {/* Service / Type */}
+                    <div className="w-[12%] text-xs text-text-secondary">{formatResourceType(r.type)}</div>
 
                     {/* Region */}
                     <div className="w-[14%] text-xs text-text-secondary">{r.region}</div>
@@ -192,9 +202,49 @@ export function ResourceTable() {
                     {/* Created */}
                     <div className="w-[12%] text-xs text-text-secondary">{formatRelativeDate(r.createdAt)}</div>
 
-                    {/* Chevron */}
-                    <div className="w-6 shrink-0 text-text-muted">
-                      <ChevronRight size={14} />
+                    {/* S3 actions / Chevron */}
+                    <div className="w-[70px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      {r.type === 's3-bucket' && (
+                        <>
+                          {/* Inline stats display */}
+                          {bucketStats[r.name] && !statsLoading[r.name] && (
+                            <span className="text-[10px] text-text-muted whitespace-nowrap mr-1">
+                              {formatNumber(bucketStats[r.name].objectCount)} / {formatBytes(bucketStats[r.name].totalSize)}
+                            </span>
+                          )}
+                          {/* Size fetch icon */}
+                          {!bucketStats[r.name] && !statsLoading[r.name] && !statsErrors[r.name] && (
+                            <button
+                              onClick={() => profile && fetchStats(r.name, profile)}
+                              className="p-0.5 text-text-muted hover:text-accent transition-colors"
+                              title="Get bucket size"
+                            >
+                              <HardDrive size={13} />
+                            </button>
+                          )}
+                          {statsLoading[r.name] && (
+                            <Loader2 size={13} className="text-accent animate-spin" />
+                          )}
+                          {statsErrors[r.name] && (
+                            <button
+                              onClick={() => profile && fetchStats(r.name, profile)}
+                              className="p-0.5 text-danger hover:text-danger/80 transition-colors"
+                              title={statsErrors[r.name]}
+                            >
+                              <AlertCircle size={13} />
+                            </button>
+                          )}
+                          {/* Browse icon */}
+                          <button
+                            onClick={() => navigate(`/s3/${encodeURIComponent(r.name)}`)}
+                            className="p-0.5 text-text-muted hover:text-accent transition-colors"
+                            title="Browse objects"
+                          >
+                            <FolderOpen size={13} />
+                          </button>
+                        </>
+                      )}
+                      <ChevronRight size={14} className="text-text-muted shrink-0" onClick={() => setSelectedId(r.id)} />
                     </div>
                   </div>
                 );

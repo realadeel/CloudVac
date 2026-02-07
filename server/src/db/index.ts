@@ -4,7 +4,7 @@ import { homedir } from 'os';
 import { mkdirSync } from 'fs';
 import type { Resource, CFStack, CostSummary } from '../../../shared/types.js';
 
-const DB_DIR = join(homedir(), '.aws-auditor');
+const DB_DIR = join(homedir(), '.cloudvac');
 const DB_PATH = join(DB_DIR, 'cache.db');
 
 // Ensure directory exists
@@ -30,6 +30,15 @@ db.exec(`
     fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
     data TEXT NOT NULL,
     PRIMARY KEY (profile)
+  );
+
+  CREATE TABLE IF NOT EXISTS bucket_stats (
+    profile TEXT NOT NULL,
+    bucket_name TEXT NOT NULL,
+    object_count INTEGER NOT NULL,
+    total_size INTEGER NOT NULL,
+    computed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (profile, bucket_name)
   );
 `);
 
@@ -58,6 +67,27 @@ const deleteScan = db.prepare(`
 
 const deleteCost = db.prepare(`
   DELETE FROM cost_results WHERE profile = ?
+`);
+
+const upsertBucketStats = db.prepare(`
+  INSERT OR REPLACE INTO bucket_stats (profile, bucket_name, object_count, total_size, computed_at)
+  VALUES (?, ?, ?, ?, datetime('now'))
+`);
+
+const getBucketStatsOne = db.prepare(`
+  SELECT object_count, total_size, computed_at FROM bucket_stats WHERE profile = ? AND bucket_name = ?
+`);
+
+const getBucketStatsAll = db.prepare(`
+  SELECT bucket_name, object_count, total_size, computed_at FROM bucket_stats WHERE profile = ?
+`);
+
+const deleteBucketStats = db.prepare(`
+  DELETE FROM bucket_stats WHERE profile = ?
+`);
+
+const deleteBucketStatsOne = db.prepare(`
+  DELETE FROM bucket_stats WHERE profile = ? AND bucket_name = ?
 `);
 
 export interface CachedScan {
@@ -98,9 +128,39 @@ export function getCostResults(profile: string): CachedCost | null {
   };
 }
 
+export interface CachedBucketStats {
+  objectCount: number;
+  totalSize: number;
+  computedAt: string;
+}
+
+export function saveBucketStats(profile: string, bucketName: string, objectCount: number, totalSize: number): void {
+  upsertBucketStats.run(profile, bucketName, objectCount, totalSize);
+}
+
+export function getBucketStats(profile: string, bucketName: string): CachedBucketStats | null {
+  const row = getBucketStatsOne.get(profile, bucketName) as { object_count: number; total_size: number; computed_at: string } | undefined;
+  if (!row) return null;
+  return { objectCount: row.object_count, totalSize: row.total_size, computedAt: row.computed_at };
+}
+
+export function getAllBucketStats(profile: string): Record<string, CachedBucketStats> {
+  const rows = getBucketStatsAll.all(profile) as { bucket_name: string; object_count: number; total_size: number; computed_at: string }[];
+  const result: Record<string, CachedBucketStats> = {};
+  for (const row of rows) {
+    result[row.bucket_name] = { objectCount: row.object_count, totalSize: row.total_size, computedAt: row.computed_at };
+  }
+  return result;
+}
+
+export function deleteBucketStatsEntry(profile: string, bucketName: string): void {
+  deleteBucketStatsOne.run(profile, bucketName);
+}
+
 export function clearProfileCache(profile: string): void {
   deleteScan.run(profile);
   deleteCost.run(profile);
+  deleteBucketStats.run(profile);
 }
 
 export function getAllCachedProfiles(): string[] {

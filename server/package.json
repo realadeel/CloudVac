@@ -1,5 +1,5 @@
 {
-  "name": "aws-auditor-server",
+  "name": "cloudvac-server",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,5 +1,5 @@
 {
-  "name": "aws-auditor-client",
+  "name": "cloudvac-client",
   "private": true,
   "type": "module",
   "scripts": {

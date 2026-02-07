@@ -1,5 +1,5 @@
 {
-  "name": "aws-auditor",
+  "name": "cloudvac",
   "private": true,
   "workspaces": ["shared", "server", "client"],
   "scripts": {

@@ -1,33 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #0f1117;
-  --color-bg-secondary: #1a1d2e;
-  --color-bg-tertiary: #252a3a;
-  --color-bg-hover: #2e3348;
-  --color-border: #2e3348;
-  --color-border-light: #3a3f54;
-  --color-text-primary: #e2e8f0;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-danger-hover: #dc2626;
-  --color-info: #3b82f6;
+  /* AWS-inspired dark palette */
+  --color-bg-primary: #0a0e17;
+  --color-bg-secondary: #131921;
+  --color-bg-tertiary: #1a2332;
+  --color-bg-hover: #232f3e;
+  --color-border: #2a3a4e;
+  --color-border-light: #37475a;
+  --color-text-primary: #f2f3f3;
+  --color-text-secondary: #a0aec0;
+  --color-text-muted: #687b8e;
+  --color-accent: #ff9900;
+  --color-accent-hover: #ffac31;
+  --color-success: #2ea043;
+  --color-warning: #f0b400;
+  --color-danger: #e53e3e;
+  --color-danger-hover: #c53030;
+  --color-info: #2074b8;
 
+  /* Service colors */
   --color-ec2: #f97316;
-  --color-rds: #3b82f6;
-  --color-s3: #22c55e;
+  --color-rds: #2074b8;
+  --color-s3: #2ea043;
   --color-lambda: #a855f7;
   --color-elb: #06b6d4;
   --color-ebs: #eab308;
   --color-nat: #ec4899;
   --color-eip: #14b8a6;
-  --color-cloudformation: #6366f1;
-  --color-dynamodb: #f59e0b;
+  --color-cloudformation: #527fff;
+  --color-dynamodb: #ff9900;
   --color-vpc: #8b5cf6;
   --color-cloudwatch: #10b981;
   --color-sns: #e11d48;
@@ -43,7 +45,11 @@ body {
   margin: 0;
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+}
+
+code, pre, .font-mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
 }
 
 ::-webkit-scrollbar {
