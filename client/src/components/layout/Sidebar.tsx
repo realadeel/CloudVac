@@ -44,7 +44,7 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <p className="text-[10px] text-text-muted">Dry-run mode ON by default</p>
+        <p className="text-[10px] text-text-muted">Toggle dry-run in header</p>
       </div>
     </aside>
   );

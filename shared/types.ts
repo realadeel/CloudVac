@@ -11,7 +11,10 @@ export interface ProfileInfo {
   region: string | null;
 }
 
-export type ServiceType = 'ec2' | 'rds' | 'elb' | 'ebs' | 'nat' | 'eip' | 'lambda' | 's3' | 'cloudformation';
+export type ServiceType =
+  | 'ec2' | 'rds' | 'elb' | 'ebs' | 'nat' | 'eip' | 'lambda' | 's3'
+  | 'dynamodb' | 'vpc' | 'cloudwatch' | 'sns' | 'sqs' | 'apigateway'
+  | 'cloudformation';
 
 export type ResourceType =
   | 'ec2-instance'
@@ -25,6 +28,18 @@ export type ResourceType =
   | 'elastic-ip'
   | 'lambda-function'
   | 's3-bucket'
+  | 'dynamodb-table'
+  | 'vpc'
+  | 'subnet'
+  | 'security-group'
+  | 'internet-gateway'
+  | 'route-table'
+  | 'cloudwatch-log-group'
+  | 'cloudwatch-alarm'
+  | 'sns-topic'
+  | 'sqs-queue'
+  | 'apigateway-rest-api'
+  | 'apigateway-http-api'
   | 'cloudformation-stack';
 
 export interface Resource {

@@ -1,7 +1,10 @@
 export const REGIONS = ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2'] as const;
 export type Region = (typeof REGIONS)[number];
 
-export const SCANNABLE_SERVICES = ['ec2', 'rds', 'elb', 'ebs', 'nat', 'eip', 'lambda', 's3'] as const;
+export const SCANNABLE_SERVICES = [
+  'ec2', 'rds', 'elb', 'ebs', 'nat', 'eip', 'lambda', 's3',
+  'dynamodb', 'vpc', 'cloudwatch', 'sns', 'sqs', 'apigateway',
+] as const;
 export type ScannableService = (typeof SCANNABLE_SERVICES)[number];
 
 export const SERVICE_COLORS: Record<string, string> = {
@@ -14,6 +17,12 @@ export const SERVICE_COLORS: Record<string, string> = {
   nat: '#ec4899',
   eip: '#14b8a6',
   cloudformation: '#6366f1',
+  dynamodb: '#f59e0b',
+  vpc: '#8b5cf6',
+  cloudwatch: '#10b981',
+  sns: '#e11d48',
+  sqs: '#d946ef',
+  apigateway: '#0ea5e9',
 };
 
 export const PORT = 3001;

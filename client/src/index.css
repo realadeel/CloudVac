@@ -27,6 +27,12 @@
   --color-nat: #ec4899;
   --color-eip: #14b8a6;
   --color-cloudformation: #6366f1;
+  --color-dynamodb: #f59e0b;
+  --color-vpc: #8b5cf6;
+  --color-cloudwatch: #10b981;
+  --color-sns: #e11d48;
+  --color-sqs: #d946ef;
+  --color-apigateway: #0ea5e9;
 }
 
 * {

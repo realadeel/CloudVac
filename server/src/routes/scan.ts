@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { getProfile } from '../aws/credentials.js';
 import { runFullScan } from '../aws/scanners/index.js';
 import { createSSEStream } from '../sse/stream.js';
+import { saveScanResults } from '../db/index.js';
 import type { Resource, CFStack } from '../../../shared/types.js';
 
 const router = Router();
 
-// In-memory cache of scan results per profile
+// In-memory cache of scan results per profile (hot cache)
 export const resourceCache = new Map<string, { resources: Resource[]; stacks: CFStack[] }>();
 
 router.get('/api/scan', async (req, res) => {
@@ -34,7 +35,9 @@ router.get('/api/scan', async (req, res) => {
       sse.send(event.type, event);
     });
 
+    // Save to both in-memory and SQLite cache
     resourceCache.set(profileName, result);
+    saveScanResults(profileName, result.resources, result.stacks);
   } catch (err) {
     if (!aborted) {
       sse.send('error', { message: (err as Error).message });

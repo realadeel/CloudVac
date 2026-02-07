@@ -1,7 +1,26 @@
 import { Router } from 'express';
 import { resourceCache } from './scan.js';
+import { getScanResults } from '../db/index.js';
 
 const router = Router();
+
+function getResourceData(profileName: string) {
+  // Try in-memory cache first (fastest)
+  const memCached = resourceCache.get(profileName);
+  if (memCached) {
+    return { ...memCached, source: 'memory' as const, scannedAt: null };
+  }
+
+  // Fall back to SQLite cache
+  const dbCached = getScanResults(profileName);
+  if (dbCached) {
+    // Warm the in-memory cache
+    resourceCache.set(profileName, { resources: dbCached.resources, stacks: dbCached.stacks });
+    return { resources: dbCached.resources, stacks: dbCached.stacks, source: 'database' as const, scannedAt: dbCached.scannedAt };
+  }
+
+  return null;
+}
 
 router.get('/api/resources', (req, res) => {
   const profileName = req.query.profile as string;
@@ -10,13 +29,13 @@ router.get('/api/resources', (req, res) => {
     return;
   }
 
-  const cached = resourceCache.get(profileName);
-  if (!cached) {
-    res.json({ resources: [], stacks: [], summary: { total: 0, managed: 0, loose: 0, byService: {} } });
+  const data = getResourceData(profileName);
+  if (!data) {
+    res.json({ resources: [], stacks: [], summary: { total: 0, managed: 0, loose: 0, byService: {} }, scannedAt: null });
     return;
   }
 
-  const { resources, stacks } = cached;
+  const { resources, stacks, scannedAt } = data;
 
   // Apply filters
   const service = req.query.service as string | undefined;
@@ -58,6 +77,7 @@ router.get('/api/resources', (req, res) => {
       loose: filtered.filter((r) => !r.managed && r.type !== 'cloudformation-stack').length,
       byService,
     },
+    scannedAt,
   });
 });
 
@@ -68,13 +88,13 @@ router.get('/api/resources/:id', (req, res) => {
     return;
   }
 
-  const cached = resourceCache.get(profileName);
-  if (!cached) {
+  const data = getResourceData(profileName);
+  if (!data) {
     res.status(404).json({ error: 'No scan data. Run a scan first.' });
     return;
   }
 
-  const resource = cached.resources.find((r) => r.id === req.params.id);
+  const resource = data.resources.find((r) => r.id === req.params.id);
   if (!resource) {
     res.status(404).json({ error: 'Resource not found' });
     return;

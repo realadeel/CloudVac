@@ -10,6 +10,12 @@ import { scanNAT } from './nat.js';
 import { scanEIP } from './eip.js';
 import { scanLambda } from './lambda.js';
 import { scanS3 } from './s3.js';
+import { scanDynamoDB } from './dynamodb.js';
+import { scanVPC } from './vpc.js';
+import { scanCloudWatch } from './cloudwatch.js';
+import { scanSNS } from './sns.js';
+import { scanSQS } from './sqs.js';
+import { scanAPIGateway } from './apigateway.js';
 
 const scannerMap: Record<ScannableService, (profile: AWSProfile, region: Region) => Promise<Resource[]>> = {
   ec2: scanEC2,
@@ -20,6 +26,12 @@ const scannerMap: Record<ScannableService, (profile: AWSProfile, region: Region)
   eip: scanEIP,
   lambda: scanLambda,
   s3: scanS3,
+  dynamodb: scanDynamoDB,
+  vpc: scanVPC,
+  cloudwatch: scanCloudWatch,
+  sns: scanSNS,
+  sqs: scanSQS,
+  apigateway: scanAPIGateway,
 };
 
 interface ScanResult {

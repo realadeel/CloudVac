@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getProfile } from '../aws/credentials.js';
 import { getCostSummary } from '../aws/cost-explorer.js';
+import { saveCostResults, getCostResults } from '../db/index.js';
 
 const router = Router();
 
@@ -17,9 +18,23 @@ router.get('/api/costs', async (req, res) => {
     return;
   }
 
+  // Check if we should force refresh
+  const forceRefresh = req.query.refresh === 'true';
+
+  if (!forceRefresh) {
+    // Try cached costs first
+    const cached = getCostResults(profileName);
+    if (cached) {
+      res.json({ ...cached.data, fetchedAt: cached.fetchedAt, cached: true });
+      return;
+    }
+  }
+
   try {
     const costs = await getCostSummary(profile);
-    res.json(costs);
+    // Save to SQLite cache
+    saveCostResults(profileName, costs);
+    res.json({ ...costs, fetchedAt: new Date().toISOString(), cached: false });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

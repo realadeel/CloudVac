@@ -16,10 +16,22 @@ const PRIORITY: Record<string, number> = {
   'clb': 1,
   'rds-instance': 1,
   'rds-cluster': 1,
+  'apigateway-rest-api': 2,
+  'apigateway-http-api': 2,
   'lambda-function': 2,
+  'dynamodb-table': 2,
+  'sns-topic': 2,
+  'sqs-queue': 2,
+  'cloudwatch-alarm': 2,
+  'cloudwatch-log-group': 3,
   'ebs-volume': 3,
   'elastic-ip': 3,
-  's3-bucket': 4,
+  'subnet': 4,
+  'route-table': 4,
+  'internet-gateway': 4,
+  'security-group': 4,
+  's3-bucket': 5,
+  'vpc': 6,
 };
 
 const ACTIONS: Record<string, string> = {
@@ -35,6 +47,18 @@ const ACTIONS: Record<string, string> = {
   'elastic-ip': 'Release Elastic IP',
   'lambda-function': 'Delete Lambda function',
   's3-bucket': 'Empty and delete S3 bucket',
+  'dynamodb-table': 'Delete DynamoDB table',
+  'vpc': 'Delete VPC',
+  'subnet': 'Delete Subnet',
+  'security-group': 'Delete Security Group',
+  'internet-gateway': 'Detach and delete Internet Gateway',
+  'route-table': 'Delete Route Table',
+  'cloudwatch-log-group': 'Delete CloudWatch Log Group',
+  'cloudwatch-alarm': 'Delete CloudWatch Alarm',
+  'sns-topic': 'Delete SNS Topic',
+  'sqs-queue': 'Delete SQS Queue',
+  'apigateway-rest-api': 'Delete REST API',
+  'apigateway-http-api': 'Delete HTTP API',
 };
 
 export function buildDeletionPlan(resources: Resource[]): DeletionNode[] {
@@ -75,12 +99,24 @@ export function buildDeletionPlan(resources: Resource[]): DeletionNode[] {
     }
 
     if (r.type === 'elastic-ip') {
-      // If a NAT gateway using this EIP is also being deleted, delete NAT first
       const natUsingThis = looseResources.find(
         (other) => other.type === 'nat-gateway' && other.metadata.eipAllocationId === r.id
       );
       if (natUsingThis) {
         deps.push(natUsingThis.id);
+      }
+    }
+
+    // VPC depends on subnets, security groups, IGWs, and route tables being deleted first
+    if (r.type === 'vpc') {
+      for (const other of looseResources) {
+        if (
+          (other.type === 'subnet' || other.type === 'security-group' ||
+           other.type === 'internet-gateway' || other.type === 'route-table') &&
+          other.metadata.vpcId === r.id && resourceSet.has(other.id)
+        ) {
+          deps.push(other.id);
+        }
       }
     }
 
@@ -153,6 +189,21 @@ export function validateDeletionPlan(
     // Warn about RDS without final snapshot
     if (r.type === 'rds-instance' || r.type === 'rds-cluster') {
       warnings.push(`RDS ${r.type === 'rds-cluster' ? 'cluster' : 'instance'} "${r.name}" will be deleted without a final snapshot.`);
+    }
+
+    // Warn about DynamoDB tables
+    if (r.type === 'dynamodb-table') {
+      warnings.push(`DynamoDB table "${r.name}" and all its data will be permanently deleted.`);
+    }
+
+    // Warn about VPC deletion
+    if (r.type === 'vpc') {
+      warnings.push(`VPC "${r.name}" will be deleted. Ensure all dependent resources are removed first.`);
+    }
+
+    // Warn about default security groups
+    if (r.type === 'security-group' && r.name === 'default') {
+      errors.push(`Cannot delete default security group ${r.id}. Remove it from the deletion queue.`);
     }
   }
 

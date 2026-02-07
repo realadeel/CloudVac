@@ -7,6 +7,13 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
 import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
 import { STSClient } from '@aws-sdk/client-sts';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
+import { CloudWatchClient } from '@aws-sdk/client-cloudwatch';
+import { SNSClient } from '@aws-sdk/client-sns';
+import { SQSClient } from '@aws-sdk/client-sqs';
+import { APIGatewayClient } from '@aws-sdk/client-api-gateway';
+import { ApiGatewayV2Client } from '@aws-sdk/client-apigatewayv2';
 import type { AWSProfile } from '../../../shared/types.js';
 import type { Region } from '../config.js';
 
@@ -49,6 +56,34 @@ export function lambda(profile: AWSProfile, region: Region) {
 
 export function s3(profile: AWSProfile, region: Region) {
   return getOrCreate(`s3:${profile.name}:${region}`, () => new S3Client({ region, credentials: getCredentials(profile) }));
+}
+
+export function dynamodb(profile: AWSProfile, region: Region) {
+  return getOrCreate(`dynamodb:${profile.name}:${region}`, () => new DynamoDBClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function cloudwatchLogs(profile: AWSProfile, region: Region) {
+  return getOrCreate(`cwlogs:${profile.name}:${region}`, () => new CloudWatchLogsClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function cloudwatch(profile: AWSProfile, region: Region) {
+  return getOrCreate(`cw:${profile.name}:${region}`, () => new CloudWatchClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function sns(profile: AWSProfile, region: Region) {
+  return getOrCreate(`sns:${profile.name}:${region}`, () => new SNSClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function sqs(profile: AWSProfile, region: Region) {
+  return getOrCreate(`sqs:${profile.name}:${region}`, () => new SQSClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function apigateway(profile: AWSProfile, region: Region) {
+  return getOrCreate(`apigw:${profile.name}:${region}`, () => new APIGatewayClient({ region, credentials: getCredentials(profile) }));
+}
+
+export function apigatewayv2(profile: AWSProfile, region: Region) {
+  return getOrCreate(`apigwv2:${profile.name}:${region}`, () => new ApiGatewayV2Client({ region, credentials: getCredentials(profile) }));
 }
 
 export function cloudformation(profile: AWSProfile, region: Region) {

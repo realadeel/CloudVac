@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Play, Eye, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { Trash2, Play, Eye, X } from 'lucide-react';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useScanStore } from '../../stores/scan-store';
 import { useDeletion } from '../../hooks/use-deletion';
@@ -10,7 +10,12 @@ import { DeletionProgress } from './DeletionProgress';
 import { EmptyState } from '../shared/EmptyState';
 
 export function DeletionQueue() {
-  const { queue, dryRun, toggleDryRun, removeFromQueue, clearQueue, status, steps, warnings } = useDeletionStore();
+  const queue = useDeletionStore((s) => s.queue);
+  const dryRun = useDeletionStore((s) => s.dryRun);
+  const removeFromQueue = useDeletionStore((s) => s.removeFromQueue);
+  const clearQueue = useDeletionStore((s) => s.clearQueue);
+  const status = useDeletionStore((s) => s.status);
+  const steps = useDeletionStore((s) => s.steps);
   const resources = useScanStore((s) => s.resources);
   const { executeDeletion } = useDeletion();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -35,16 +40,7 @@ export function DeletionQueue() {
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold">{queue.length} resource(s) queued</h2>
-          <button
-            onClick={toggleDryRun}
-            className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
-          >
-            {dryRun ? <ToggleLeft size={20} className="text-success" /> : <ToggleRight size={20} className="text-danger" />}
-            {dryRun ? 'Dry Run ON' : 'Dry Run OFF'}
-          </button>
-        </div>
+        <h2 className="text-lg font-semibold">{queue.length} resource(s) queued</h2>
 
         <div className="flex items-center gap-3">
           <button

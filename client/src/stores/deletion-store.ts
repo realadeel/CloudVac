@@ -24,6 +24,7 @@ interface DeletionStore {
 
   addToQueue: (ids: string[]) => void;
   removeFromQueue: (id: string) => void;
+  removeMultipleFromQueue: (ids: string[]) => void;
   clearQueue: () => void;
   toggleDryRun: () => void;
   setJobId: (id: string) => void;
@@ -48,6 +49,10 @@ export const useDeletionStore = create<DeletionStore>((set) => ({
 
   addToQueue: (ids) => set((s) => ({ queue: [...new Set([...s.queue, ...ids])] })),
   removeFromQueue: (id) => set((s) => ({ queue: s.queue.filter((i) => i !== id) })),
+  removeMultipleFromQueue: (ids) => set((s) => {
+    const toRemove = new Set(ids);
+    return { queue: s.queue.filter((i) => !toRemove.has(i)) };
+  }),
   clearQueue: () => set({ queue: [] }),
   toggleDryRun: () => set((s) => ({ dryRun: !s.dryRun })),
   setJobId: (jobId) => set({ jobId }),

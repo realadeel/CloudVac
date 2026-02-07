@@ -9,6 +9,12 @@ import { deleteNatGateway } from './strategies/nat.js';
 import { releaseEIP } from './strategies/eip.js';
 import { deleteLambdaFunction } from './strategies/lambda.js';
 import { deleteS3Bucket } from './strategies/s3.js';
+import { deleteDynamoDBTable } from './strategies/dynamodb.js';
+import { deleteVpc, deleteSubnet, deleteSecurityGroup, deleteInternetGateway, deleteRouteTable } from './strategies/vpc.js';
+import { deleteLogGroup, deleteAlarm } from './strategies/cloudwatch.js';
+import { deleteSNSTopic } from './strategies/sns.js';
+import { deleteSQSQueue } from './strategies/sqs.js';
+import { deleteRestApi, deleteHttpApi } from './strategies/apigateway.js';
 import { DELETE_CONCURRENCY } from '../config.js';
 
 type Emit = (event: string, data: unknown) => void;
@@ -26,6 +32,18 @@ const deleteHandlers: Record<string, (profile: AWSProfile, resource: Resource, e
   'elastic-ip': releaseEIP,
   'lambda-function': deleteLambdaFunction,
   's3-bucket': deleteS3Bucket,
+  'dynamodb-table': deleteDynamoDBTable,
+  'vpc': deleteVpc,
+  'subnet': deleteSubnet,
+  'security-group': deleteSecurityGroup,
+  'internet-gateway': deleteInternetGateway,
+  'route-table': deleteRouteTable,
+  'cloudwatch-log-group': deleteLogGroup,
+  'cloudwatch-alarm': deleteAlarm,
+  'sns-topic': deleteSNSTopic,
+  'sqs-queue': deleteSQSQueue,
+  'apigateway-rest-api': deleteRestApi,
+  'apigateway-http-api': deleteHttpApi,
 };
 
 export async function executeDeletion(
