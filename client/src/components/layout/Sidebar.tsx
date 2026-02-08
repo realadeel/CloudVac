@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Server, Trash2, CloudCog, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Server, Trash2, CloudCog, Menu, X, Github } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useSidebarStore } from '../../stores/sidebar-store';
@@ -77,7 +77,16 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
+          <a
+            href="https://github.com/realadeel/CloudVac"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs text-text-muted hover:text-text-primary transition-colors"
+          >
+            <Github size={14} />
+            GitHub
+          </a>
           <p className="text-[10px] text-text-muted">Toggle dry-run in header</p>
         </div>
       </aside>
