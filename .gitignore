@@ -7,3 +7,4 @@ dist/
 *.sqlite
 *.sqlite3
 .aws-auditor/
+coverage/

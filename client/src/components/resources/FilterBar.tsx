@@ -1,6 +1,5 @@
 import { Search, X } from 'lucide-react';
 import { formatResourceType } from '../../lib/format';
-import type { Resource } from '../../../../shared/types';
 
 const SERVICES = [
   'ec2', 'rds', 'elb', 'ebs', 'nat', 'eip', 'lambda', 's3',
@@ -21,7 +20,7 @@ interface Props {
   onChange: (filters: Filters) => void;
   totalCount: number;
   filteredCount: number;
-  resources: Resource[];
+  resources: { service: string; type: string }[];
 }
 
 export function FilterBar({ filters, onChange, totalCount, filteredCount, resources }: Props) {
