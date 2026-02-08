@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/realadeel/CloudVac/actions/workflows/ci.yml"><img src="https://github.com/realadeel/CloudVac/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-brightgreen?logo=node.js&logoColor=white" alt="Node 18+"></a>
   <a href="https://github.com/realadeel/CloudVac/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
@@ -527,4 +527,4 @@ npm run build          # Production build
 
 ## License
 
-[MIT](LICENSE)
+[AGPL-3.0](LICENSE)
