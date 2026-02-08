@@ -66,7 +66,19 @@ export const useDeletionStore = create<DeletionStore>((set) => ({
   setWarnings: (warnings) => set({ warnings }),
   setProgress: (progress) => set({ progress }),
   setError: (error) => set({ error }),
-  reset: () => set({ jobId: null, status: 'idle', steps: [], warnings: [], progress: 0, error: null }),
+  reset: () => set((s) => {
+    // Remove successfully deleted items from queue on reset
+    const deletedIds = new Set(s.steps.filter((step) => step.status === 'deleted').map((step) => step.id));
+    return {
+      queue: deletedIds.size > 0 ? s.queue.filter((id) => !deletedIds.has(id)) : s.queue,
+      jobId: null,
+      status: 'idle',
+      steps: [],
+      warnings: [],
+      progress: 0,
+      error: null,
+    };
+  }),
   retryFailed: () => set((s) => {
     const failedIds = s.steps.filter((step) => step.status === 'failed').map((step) => step.id);
     return {

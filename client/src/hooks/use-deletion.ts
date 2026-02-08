@@ -7,7 +7,7 @@ import { useLogStore } from '../stores/log-store';
 
 export function useDeletion() {
   const profile = useProfileStore((s) => s.selectedProfile);
-  const { queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue } = useDeletionStore();
+  const { queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue, removeMultipleFromQueue } = useDeletionStore();
   const addLog = useLogStore((s) => s.addLog);
 
   const executeDeletion = useCallback(async () => {
@@ -61,6 +61,12 @@ export function useDeletion() {
           addLog({ level: 'info', message: data.message });
         },
         complete: (data: any) => {
+          // Bulk-remove all successfully deleted items from queue (belt + suspenders with per-item removal)
+          const { steps: currentSteps } = useDeletionStore.getState();
+          const deletedIds = currentSteps.filter((s) => s.status === 'deleted').map((s) => s.id);
+          if (deletedIds.length > 0) {
+            removeMultipleFromQueue(deletedIds);
+          }
           setStatus('complete');
           addLog({ level: 'success', message: `Deletion complete: ${data.deleted}/${data.total} deleted` });
         },
@@ -75,7 +81,7 @@ export function useDeletion() {
       setError((err as Error).message);
       addLog({ level: 'error', message: `Failed to start deletion: ${(err as Error).message}` });
     }
-  }, [profile, queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue, addLog]);
+  }, [profile, queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue, removeMultipleFromQueue, addLog]);
 
   return { executeDeletion };
 }

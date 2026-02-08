@@ -180,13 +180,31 @@ describe('deletion store – queue stays in sync during deletion lifecycle', () 
     expect(getState().queue.length).toBe(1);
   });
 
-  it('reset does not clear queue (only job state)', () => {
-    getState().addToQueue(['a', 'b']);
-    useDeletionStore.setState({ status: 'complete', jobId: 'j1' });
+  it('reset removes successfully deleted items from queue', () => {
+    getState().addToQueue(['a', 'b', 'c']);
+    useDeletionStore.setState({
+      status: 'complete',
+      jobId: 'j1',
+      steps: [
+        makeStep('a', 'deleted'),
+        makeStep('b', 'failed'),
+        makeStep('c', 'deleted'),
+      ],
+    });
     getState().reset();
-    // Queue should remain — user may want to retry
-    expect(getState().queue).toEqual(['a', 'b']);
+    // Only failed items remain in queue
+    expect(getState().queue).toEqual(['b']);
     expect(getState().status).toBe('idle');
     expect(getState().jobId).toBeNull();
+    expect(getState().steps).toEqual([]);
+  });
+
+  it('reset keeps full queue when no steps exist', () => {
+    getState().addToQueue(['a', 'b']);
+    useDeletionStore.setState({ status: 'complete', jobId: 'j1', steps: [] });
+    getState().reset();
+    // No steps = nothing to remove
+    expect(getState().queue).toEqual(['a', 'b']);
+    expect(getState().status).toBe('idle');
   });
 });
