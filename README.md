@@ -1,10 +1,54 @@
-# CloudVac
+<p align="center">
+  <h1 align="center">CloudVac</h1>
+  <p align="center"><strong>Good housekeeping for AWS.</strong></p>
+  <p align="center">Scan, inspect, and clean up unused resources across multiple AWS profiles and regions.</p>
+</p>
 
-**Good housekeeping for AWS.** Scan, inspect, and clean up unused resources across multiple profiles and regions.
+<p align="center">
+  <a href="https://github.com/realadeel/CloudVac/actions/workflows/ci.yml"><img src="https://github.com/realadeel/CloudVac/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript&logoColor=white" alt="TypeScript"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-brightgreen?logo=node.js&logoColor=white" alt="Node 18+"></a>
+  <a href="https://github.com/realadeel/CloudVac/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+</p>
 
-CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, shows your cost breakdown, and handles dependency-aware deletion with dry-run safety. Everything runs locally. Nothing phones home.
+<br>
 
-![CloudVac screenshot](docs/screenshot.png)
+<p align="center">
+  <img src="docs/screenshot.png" alt="CloudVac screenshot" width="900">
+</p>
+
+---
+
+CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, estimates per-resource costs, and handles dependency-aware deletion with dry-run safety.
+
+Everything runs locally. No telemetry. No external calls. Your credentials never leave your machine.
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 18+**
+- **AWS credentials** configured in `~/.aws/credentials` and/or `~/.aws/config`
+
+### Install and run
+
+```bash
+git clone https://github.com/realadeel/CloudVac.git
+cd CloudVac
+npm install
+npm run dev
+```
+
+Opens at [http://localhost:5173](http://localhost:5173). Select a profile from the dropdown and click **Scan Account**.
+
+### Run tests
+
+```bash
+npm test              # run all tests
+npm run test:watch    # watch mode
+npm run test:coverage # with coverage report
+```
 
 ---
 
@@ -14,18 +58,17 @@ CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US re
 - [Security Model](#security-model)
 - [Exactly What It Touches](#exactly-what-it-touches)
 - [IAM Permissions Reference](#iam-permissions-reference)
-- [Quick Start](#quick-start)
-- [Regions Scanned](#regions-scanned)
 - [Services Scanned](#services-scanned)
 - [Deletion Safety](#deletion-safety)
 - [Deletion Ordering](#deletion-ordering)
+- [Cost Estimation](#cost-estimation)
 - [S3 Features](#s3-features)
 - [Caching](#caching)
 - [Architecture](#architecture)
 - [API Reference](#api-reference)
 - [Tech Stack](#tech-stack)
-- [Scripts](#scripts)
-- [Adding More Services](#adding-more-services)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -36,17 +79,17 @@ CloudVac is a local-only tool. It runs two processes on your machine:
 1. **Express API server** (port 3001) — talks to AWS using your local credentials
 2. **Vite dev server** (port 5173) — serves the React UI, proxies `/api` to the Express server
 
-When you click "Scan Account", the server reads the selected profile from `~/.aws/credentials` (and `~/.aws/config`), creates AWS SDK v3 clients with those credentials, and makes read-only API calls to discover resources. Results stream back to the browser in real-time via Server-Sent Events.
+When you click **Scan Account**, the server reads the selected profile from `~/.aws/credentials`, creates AWS SDK v3 clients, and makes read-only API calls to discover resources. Results stream back to the browser in real time via Server-Sent Events.
 
 When you select resources for deletion, the server builds a dependency graph, shows you a full execution plan, and (only if you explicitly switch off dry-run and confirm) executes deletions in topological order.
 
-The server caches scan results and cost data in a local SQLite database at `~/.cloudvac/cache.db` so you can switch profiles instantly without re-scanning.
+Scan results and cost data are cached in a local SQLite database at `~/.cloudvac/cache.db` so you can switch profiles instantly without re-scanning.
 
 ---
 
 ## Security Model
 
-This section exists because you should be skeptical of any tool that asks for AWS access.
+> This section exists because you should be skeptical of any tool that asks for AWS access.
 
 ### Your credentials never leave your machine
 
@@ -77,7 +120,7 @@ It does **not** contain AWS access keys, secret keys, or session tokens. The `.g
 
 ### Dry-run is on by default
 
-The deletion API defaults to `dryRun: true`. You must explicitly toggle it off and confirm before any destructive action executes. The UI enforces this.
+The deletion API defaults to `dryRun: true`. You must explicitly toggle it off and confirm before any destructive action executes.
 
 ### No writes during scanning
 
@@ -90,7 +133,7 @@ Every API call during a scan is a Describe/List/Get operation. Scanning never mo
 ### During scanning (read-only)
 
 | AWS Service | API Calls Made | What's Collected |
-|-------------|---------------|-----------------|
+|---|---|---|
 | **EC2** | `DescribeInstances` | Instance ID, type, IPs, VPC, state, launch time, tags |
 | **EBS** | `DescribeVolumes` | Volume ID, size, type, IOPS, attachments, tags |
 | **NAT Gateway** | `DescribeNatGateways` | Gateway ID, VPC, subnet, public IP, state |
@@ -107,23 +150,22 @@ Every API call during a scan is a Describe/List/Get operation. Scanning never mo
 | **API Gateway** | `GetRestApis`, `GetApis` (v2) | API ID, name, type, endpoint, creation date |
 | **CloudFormation** | `ListStacks`, `ListStackResources` | Stack ID/name, status, creation time, all child resource IDs |
 | **Cost Explorer** | `GetCostAndUsage` | 30-day unblended cost grouped by service |
-| **STS** | (used internally by SDK for credential validation) | — |
 
 All scanning API calls are paginated where applicable. No data is modified.
 
 ### During S3 bucket inspection (read-only)
 
 | Operation | API Call | Purpose |
-|-----------|----------|---------|
+|---|---|---|
 | Bucket stats | `ListObjectsV2` (full enumeration) | Count all objects and sum their sizes |
 | Object browsing | `ListObjectsV2` with `Delimiter='/'` | Folder-like navigation with pagination |
 
 ### During deletion (destructive)
 
-These API calls are only made when you explicitly initiate deletion with dry-run disabled:
+These API calls are **only** made when you explicitly initiate deletion with dry-run disabled:
 
 | Resource Type | API Calls | Notes |
-|---------------|-----------|-------|
+|---|---|---|
 | EC2 Instance | `TerminateInstances` | |
 | EBS Volume | `DeleteVolume` | Fails if still attached |
 | NAT Gateway | `DeleteNatGateway` | |
@@ -152,7 +194,8 @@ These API calls are only made when you explicitly initiate deletion with dry-run
 
 ## IAM Permissions Reference
 
-### Minimum for scanning only (read-only)
+<details>
+<summary><strong>Minimum for scanning only (read-only)</strong></summary>
 
 ```json
 {
@@ -196,7 +239,10 @@ These API calls are only made when you explicitly initiate deletion with dry-run
 }
 ```
 
-### Additional permissions for deletion
+</details>
+
+<details>
+<summary><strong>Additional permissions for deletion</strong></summary>
 
 ```json
 {
@@ -237,49 +283,18 @@ These API calls are only made when you explicitly initiate deletion with dry-run
 }
 ```
 
+</details>
+
 You can scope `Resource` to specific ARNs or use conditions to restrict which accounts/regions are affected.
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- **Node.js 18+**
-- **AWS credentials** configured in `~/.aws/credentials` and/or `~/.aws/config`
-
-### Install and run
-
-```bash
-git clone https://github.com/youruser/cloudvac.git
-cd cloudvac
-npm install
-npm run dev
-```
-
-Opens at [http://localhost:5173](http://localhost:5173). The Express API runs on port 3001. Vite proxies all `/api` requests automatically.
-
-Select a profile from the dropdown and click **Scan Account**. Scanning takes 10-30 seconds depending on how many resources exist.
-
----
-
-## Regions Scanned
-
-| Region | Location |
-|--------|----------|
-| `us-east-1` | N. Virginia |
-| `us-east-2` | Ohio |
-| `us-west-1` | N. California |
-| `us-west-2` | Oregon |
-
-Regions are configured in `server/src/config.ts`. Add or remove entries from the `REGIONS` array to change coverage.
 
 ---
 
 ## Services Scanned
 
+14 services across 4 US regions (`us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`):
+
 | Service | Resources Found |
-|---------|----------------|
+|---|---|
 | **EC2** | All non-terminated instances |
 | **RDS** | DB instances and Aurora clusters |
 | **ELB** | Application, Network, and Classic Load Balancers |
@@ -296,22 +311,24 @@ Regions are configured in `server/src/config.ts`. Add or remove entries from the
 | **API Gateway** | REST APIs and HTTP/WebSocket APIs |
 | **CloudFormation** | Active stacks and all child resources (used to tag managed resources) |
 
+Regions are configured in `server/src/config.ts`. Add or remove entries from the `REGIONS` array to change coverage.
+
 ---
 
 ## Deletion Safety
 
 CloudVac is designed to make it hard to accidentally destroy things:
 
-- **Dry-run is the default.** The `POST /api/delete` endpoint defaults to `dryRun: true`. You see the full execution plan before anything happens.
+- **Dry-run is the default.** You see the full execution plan before anything happens.
 - **Dependency validation.** The deletion planner checks for issues and surfaces warnings and hard errors before execution.
-- **Default security groups are blocked.** Attempting to delete a default SG produces an error that halts the entire plan.
+- **Default security groups are blocked.** Attempting to delete a default SG produces an error that halts the plan.
 - **Explicit warnings for destructive operations:**
   - S3 buckets: "All objects will be permanently deleted"
   - RDS instances/clusters: "Will be deleted without a final snapshot"
   - DynamoDB tables: "All data will be permanently deleted"
   - VPCs: "Requires all dependent resources to be removed first"
   - EBS volumes: "Volume is still attached to an instance not in the deletion set"
-- **Managed resource deduplication.** If a resource belongs to a CloudFormation stack and the stack is also being deleted, the individual resource is skipped (CloudFormation handles it).
+- **Managed resource deduplication.** If a resource belongs to a CloudFormation stack that's also being deleted, the individual resource is skipped (CloudFormation handles it).
 - **Real-time progress.** Deletion progress streams back via SSE so you can see exactly what's happening.
 
 ---
@@ -334,25 +351,38 @@ Tiers execute sequentially. Within each tier, up to 3 deletions run in parallel.
 
 ---
 
+## Cost Estimation
+
+CloudVac provides per-resource monthly cost estimates using static on-demand pricing data:
+
+| Resource | Estimation Method |
+|---|---|
+| **EC2** | Instance type hourly rate x 730 hrs/mo |
+| **EBS** | Per-GB rate + provisioned IOPS/throughput charges |
+| **RDS** | Instance class hourly rate + storage (multi-AZ doubles compute) |
+| **NAT Gateway** | Hourly rate x 730 hrs/mo |
+| **Elastic IP** | Charged when unassociated, free when associated |
+| **ELB** | Base hourly rate x 730 hrs/mo |
+| **DynamoDB** | Provisioned RCU/WCU + storage (on-demand returns N/A) |
+| **CloudWatch** | Log storage per GB + $0.10/alarm/mo |
+| **S3** | Storage per GB (requires bucket stats) |
+| **Lambda, SNS, SQS, API Gateway** | $0 when idle (usage-based, no idle cost) |
+| **VPC, Subnet, SG, IGW, Route Table** | Free |
+| **CF Stacks** | N/A (cost is in child resources) |
+
+When you queue resources for deletion, the **savings banner** shows your current bill, estimated monthly savings, and projected bill after cleanup. Regional multipliers are applied for `us-west-1` (10% premium).
+
+---
+
 ## S3 Features
 
-### On-demand bucket sizing
+**On-demand bucket sizing** — Click the hard drive icon on any S3 bucket to compute total object count and size. Results are cached in SQLite and load instantly on subsequent visits.
 
-Click the hard drive icon on any S3 bucket row to compute the total object count and size. This iterates all objects via `ListObjectsV2` and caches the result in SQLite. Cached stats load instantly on subsequent visits.
+**Object browser** — Click the folder icon to open a folder-like browser at `/s3/:bucketName` using S3's `Delimiter='/'` and `Prefix` parameters with pagination (200 objects per page).
 
-### Object browser
+**Bucket emptying** — Iterates `ListObjectVersions` and `DeleteObjects` in batches of 1000, handling all versions and delete markers. Progress streams via SSE.
 
-Click the folder icon or "Browse Objects" to open the bucket detail page at `/s3/:bucketName`. This provides folder-like navigation using S3's `Delimiter='/'` and `Prefix` parameters with pagination (200 objects per page).
-
-### Bucket emptying
-
-For buckets that need to be emptied before deletion (or as a standalone action), the "Empty Bucket" feature iterates `ListObjectVersions` and `DeleteObjects` in batches of 1000, handling all versions and delete markers. Progress streams via SSE. After emptying, cached stats are updated to 0/0.
-
-### Cache invalidation
-
-- Bucket stats are cleared from SQLite when a bucket is deleted
-- Stats are set to 0/0 after a bucket is emptied
-- All bucket stats for a profile are cleared when you clear the profile cache
+**Cache invalidation** — Bucket stats are cleared on delete, set to 0/0 on empty, and cleared for a profile on cache reset.
 
 ---
 
@@ -360,11 +390,11 @@ For buckets that need to be emptied before deletion (or as a standalone action),
 
 Scan results, cost data, and bucket stats are cached in SQLite at `~/.cloudvac/cache.db`:
 
-| Table | What's Cached | Key | Invalidation |
-|-------|--------------|-----|-------------|
-| `scan_results` | Full resource list + CF stacks | `profile` | Overwritten on re-scan |
-| `cost_results` | 30-day cost breakdown | `profile` | `?refresh=true` to force |
-| `bucket_stats` | Object count + total size per bucket | `profile + bucket_name` | On delete, on empty, on profile clear |
+| Table | What's Cached | Invalidation |
+|---|---|---|
+| `scan_results` | Full resource list + CF stacks | Overwritten on re-scan |
+| `cost_results` | 30-day cost breakdown | `?refresh=true` to force |
+| `bucket_stats` | Object count + total size per bucket | On delete, on empty, on profile clear |
 
 Benefits:
 - **Instant profile switching** without re-scanning
@@ -385,63 +415,27 @@ cloudvac/
 │   └── src/
 │       ├── index.ts           App setup, CORS, route registration
 │       ├── config.ts          Regions, services, concurrency, port
-│       ├── routes/
-│       │   ├── profiles.ts    GET /api/profiles
-│       │   ├── scan.ts        GET /api/scan (SSE)
-│       │   ├── resources.ts   GET /api/resources, GET /api/resources/:id
-│       │   ├── costs.ts       GET /api/costs
-│       │   ├── delete.ts      POST /api/delete, GET /api/delete/:jobId (SSE)
-│       │   ├── s3.ts          GET /api/s3/stats/all, /:bucket/stats, /:bucket/objects
-│       │   └── empty-bucket.ts POST /api/empty-bucket (SSE)
+│       ├── routes/            REST + SSE endpoints
 │       ├── aws/
 │       │   ├── credentials.ts  Reads ~/.aws/credentials + config
 │       │   ├── clients.ts      AWS SDK v3 client factory (cached)
 │       │   ├── cost-explorer.ts Cost Explorer integration
 │       │   ├── cloudformation.ts Stack + resource discovery
 │       │   └── scanners/        14 service-specific scanners
-│       ├── db/
-│       │   └── index.ts         SQLite schema, queries, caching
-│       ├── deletion/
-│       │   ├── dependency-graph.ts  Topological sort, validation
-│       │   ├── executor.ts          Runs deletions with SSE progress
-│       │   └── strategies/          24 resource-type deletion handlers
-│       └── sse/
-│           └── stream.ts        SSE response helper
+│       ├── pricing/           Static cost estimation engine
+│       ├── db/                SQLite schema, queries, caching
+│       ├── deletion/          Dependency graph, executor, 24 strategies
+│       └── sse/               SSE response helper
 │
-└── client/              React 19 + Vite 6 + Tailwind CSS 4
-    └── src/
-        ├── App.tsx              Router (5 pages)
-        ├── api/
-        │   ├── client.ts        fetch wrapper (relative /api paths only)
-        │   └── sse.ts           EventSource + POST-based SSE consumers
-        ├── stores/              Zustand v5 stores
-        │   ├── profile-store.ts
-        │   ├── scan-store.ts
-        │   ├── cost-store.ts
-        │   ├── deletion-store.ts
-        │   ├── bucket-store.ts
-        │   └── log-store.ts
-        ├── hooks/               SSE lifecycle hooks
-        │   ├── use-scan.ts
-        │   ├── use-deletion.ts
-        │   └── use-empty-bucket.ts
-        ├── pages/
-        │   ├── DashboardPage.tsx
-        │   ├── ResourcesPage.tsx
-        │   ├── BucketDetailPage.tsx
-        │   ├── DeletionPage.tsx
-        │   └── LogsPage.tsx
-        ├── components/
-        │   ├── layout/          Sidebar, Header
-        │   ├── dashboard/       Cost chart, scan summary
-        │   ├── resources/       FilterBar, ResourceTable, ResourceDetail
-        │   ├── deletion/        Queue, preview, progress
-        │   ├── s3/              BreadcrumbNav, ObjectTable
-        │   ├── shared/          Badge, ServiceIcon, EmptyState
-        │   └── logs/            Activity feed
-        └── lib/
-            ├── cn.ts            clsx + tailwind-merge
-            └── format.ts        Date, currency, bytes, resource type formatters
+├── client/              React 19 + Vite 6 + Tailwind CSS 4
+│   └── src/
+│       ├── stores/            Zustand v5 stores (6 stores)
+│       ├── hooks/             SSE lifecycle hooks
+│       ├── pages/             5 pages (Dashboard, Resources, S3, Deletion, Logs)
+│       ├── components/        UI components (layout, dashboard, resources, deletion, s3, shared)
+│       └── lib/               Utilities (format, cn)
+│
+└── .github/workflows/   CI pipeline (test, build, type check)
 ```
 
 ---
@@ -449,28 +443,31 @@ cloudvac/
 ## API Reference
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+|---|---|---|
 | `/api/health` | GET | Health check |
 | `/api/profiles` | GET | List AWS profiles (names + regions only, no credentials) |
 | `/api/scan?profile=X` | GET | SSE stream: scans 14 services across 4 regions |
-| `/api/resources?profile=X` | GET | Cached scan results with optional filters (`service`, `region`, `managed`, `search`) |
+| `/api/resources?profile=X` | GET | Cached scan results with optional filters |
 | `/api/resources/:id?profile=X` | GET | Single resource by ID |
 | `/api/costs?profile=X` | GET | 30-day cost breakdown (cached; `&refresh=true` to force) |
-| `/api/delete` | POST | Start deletion job. Body: `{ profile, resourceIds, dryRun }`. Returns `{ jobId }` |
+| `/api/costs/estimates?profile=X` | GET | Per-resource monthly cost estimates |
+| `/api/delete` | POST | Start deletion job (`{ profile, resourceIds, dryRun }`) |
 | `/api/delete/:jobId` | GET | SSE stream: deletion progress with event replay |
 | `/api/s3/stats/all?profile=X` | GET | All cached bucket stats for a profile |
-| `/api/s3/:bucket/stats?profile=X` | GET | Compute bucket size/count (cached; `&refresh=true` to force) |
-| `/api/s3/:bucket/objects?profile=X` | GET | Paginated object listing with folder navigation (`&prefix=`, `&cursor=`, `&pageSize=`) |
-| `/api/empty-bucket` | POST | SSE stream: empties an S3 bucket. Body: `{ profile, resourceId }` |
+| `/api/s3/:bucket/stats?profile=X` | GET | Compute bucket size/count (cached) |
+| `/api/s3/:bucket/objects?profile=X` | GET | Paginated object listing with folder navigation |
+| `/api/empty-bucket` | POST | SSE stream: empties an S3 bucket |
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|---|---|
 | **Server** | Express 5, AWS SDK v3, better-sqlite3, tsx |
 | **Client** | React 19, Vite 6, Tailwind CSS 4, Zustand 5 |
+| **Testing** | Vitest, v8 coverage |
+| **CI** | GitHub Actions (Node 18/20/22 matrix) |
 | **Fonts** | Geist Sans + Geist Mono |
 | **Icons** | Lucide React |
 | **Routing** | React Router 7 |
@@ -479,18 +476,13 @@ cloudvac/
 
 ---
 
-## Scripts
+## Contributing
 
-```bash
-npm run dev        # Start server (port 3001) + client (port 5173) concurrently
-npm run build      # Build server (tsc) then client (vite build)
-```
+Contributions are welcome! Please open an issue first to discuss what you'd like to change.
 
----
+### Adding a new AWS service
 
-## Adding More Services
-
-Each scanner is a self-contained module. To add a new AWS service:
+Each scanner is a self-contained module:
 
 1. Create `server/src/aws/scanners/yourservice.ts` exporting a scan function
 2. Add a client factory in `server/src/aws/clients.ts`
@@ -500,9 +492,20 @@ Each scanner is a self-contained module. To add a new AWS service:
 6. Add the service + resource types to `shared/types.ts` and `server/src/config.ts`
 7. Add icon + color in `client/src/components/shared/ServiceIcon.tsx` and `client/src/index.css`
 8. Add a display label in `client/src/lib/format.ts` (`RESOURCE_TYPE_LABELS`)
+9. Add pricing data in `server/src/pricing/rates.ts` and estimation logic in `estimate.ts`
+10. Add tests
+
+### Development
+
+```bash
+npm run dev            # Start server + client concurrently
+npm test               # Run all tests
+npm run test:coverage  # Tests with coverage report
+npm run build          # Production build
+```
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE)
