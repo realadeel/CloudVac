@@ -42,9 +42,9 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount, resour
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[160px] sm:min-w-[200px] basis-full sm:basis-auto">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
             type="text"
@@ -67,7 +67,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount, resour
         <select
           value={filters.services.length === 0 ? '' : filters.services[0]}
           onChange={(e) => onChange({ ...filters, services: e.target.value ? [e.target.value] : [], types: [] })}
-          className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
+          className={`flex-1 sm:flex-none border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
             filters.services.length > 0
               ? 'bg-accent/15 border-accent/40 text-accent font-medium'
               : 'bg-bg-tertiary border-border text-text-primary'
@@ -86,7 +86,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount, resour
           <select
             value={filters.types.length === 0 ? '' : filters.types[0]}
             onChange={(e) => onChange({ ...filters, types: e.target.value ? [e.target.value] : [] })}
-            className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
+            className={`flex-1 sm:flex-none border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
               filters.types.length > 0
                 ? 'bg-accent/15 border-accent/40 text-accent font-medium'
                 : 'bg-bg-tertiary border-border text-text-primary'
@@ -105,7 +105,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount, resour
         <select
           value={filters.regions.length === 0 ? '' : filters.regions[0]}
           onChange={(e) => onChange({ ...filters, regions: e.target.value ? [e.target.value] : [] })}
-          className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
+          className={`flex-1 sm:flex-none border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent cursor-pointer ${
             filters.regions.length > 0
               ? 'bg-accent/15 border-accent/40 text-accent font-medium'
               : 'bg-bg-tertiary border-border text-text-primary'
@@ -125,7 +125,7 @@ export function FilterBar({ filters, onChange, totalCount, filteredCount, resour
             <button
               key={opt}
               onClick={() => onChange({ ...filters, managed: opt })}
-              className={`px-3 py-2 text-sm capitalize transition-colors ${
+              className={`px-2.5 sm:px-3 py-2 text-xs sm:text-sm capitalize transition-colors ${
                 filters.managed === opt
                   ? 'bg-accent/20 text-accent font-medium'
                   : 'text-text-secondary hover:text-text-primary'

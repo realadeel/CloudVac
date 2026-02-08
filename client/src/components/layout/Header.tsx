@@ -59,14 +59,14 @@ export function Header() {
     : null;
 
   return (
-    <header className="h-14 bg-bg-secondary border-b border-border flex items-center justify-between px-6 fixed top-0 left-56 right-0 z-10">
-      <div className="flex items-center gap-4">
+    <header className="h-14 bg-bg-secondary border-b border-border flex items-center justify-between px-3 sm:px-4 md:px-6 fixed top-0 left-0 md:left-56 right-0 z-10">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0 pl-10 md:pl-0">
         {/* Profile selector */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <select
             value={selectedProfile ?? ''}
             onChange={(e) => handleProfileChange(e.target.value)}
-            className="appearance-none bg-bg-tertiary border border-border rounded-lg px-3 py-1.5 pr-8 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
+            className="appearance-none bg-bg-tertiary border border-border rounded-lg px-3 py-1.5 pr-8 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer max-w-[140px] sm:max-w-none"
           >
             {profiles.map((p) => (
               <option key={p.name} value={p.name}>
@@ -79,44 +79,45 @@ export function Header() {
 
         {/* Scan progress */}
         {scanStatus === 'scanning' && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Spinner size="sm" />
-            <span className="text-sm text-text-secondary">Scanning...</span>
-            <div className="w-32">
+            <span className="text-sm text-text-secondary hidden sm:inline">Scanning...</span>
+            <div className="w-20 sm:w-32">
               <ProgressBar value={progress} />
             </div>
             <span className="text-xs text-text-muted">{Math.round(progress * 100)}%</span>
           </div>
         )}
 
-        {/* Last scan timestamp */}
+        {/* Last scan timestamp — hide on small screens */}
         {lastScanLabel && scanStatus !== 'scanning' && (
-          <span className="text-xs text-text-muted">{lastScanLabel}</span>
+          <span className="text-xs text-text-muted hidden lg:inline">{lastScanLabel}</span>
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Dry-run toggle */}
         <button
           onClick={toggleDryRun}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
             dryRun
               ? 'bg-success/10 text-success border-success/30 hover:bg-success/20'
               : 'bg-danger/10 text-danger border-danger/30 hover:bg-danger/20'
           }`}
         >
           {dryRun ? <ShieldCheck size={15} /> : <ShieldOff size={15} />}
-          {dryRun ? 'Dry Run' : 'LIVE'}
+          <span className="hidden sm:inline">{dryRun ? 'Dry Run' : 'LIVE'}</span>
         </button>
 
         {/* Scan button */}
         <button
           onClick={startScan}
           disabled={!selectedProfile || scanStatus === 'scanning'}
-          className="flex items-center gap-2 px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Scan size={16} />
-          {scanStatus === 'scanning' ? 'Scanning...' : 'Scan Account'}
+          <span className="hidden sm:inline">{scanStatus === 'scanning' ? 'Scanning...' : 'Scan Account'}</span>
+          <span className="sm:hidden">Scan</span>
         </button>
       </div>
     </header>

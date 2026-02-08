@@ -16,13 +16,13 @@ import { EmptyState } from '../shared/EmptyState';
 type SortKey = 'name' | 'service' | 'region' | 'status' | 'estimatedCost' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 
-const COLUMNS: { key: SortKey; label: string; className: string }[] = [
-  { key: 'name', label: 'Resource', className: 'w-[36%]' },
-  { key: 'service', label: 'Type', className: 'w-[10%]' },
-  { key: 'region', label: 'Region', className: 'w-[12%]' },
-  { key: 'status', label: 'Status', className: 'w-[12%]' },
-  { key: 'estimatedCost', label: 'Est. Cost', className: 'w-[10%]' },
-  { key: 'createdAt', label: 'Created', className: 'w-[10%]' },
+const COLUMNS: { key: SortKey; label: string; className: string; hideOnMobile?: boolean }[] = [
+  { key: 'name', label: 'Resource', className: 'min-w-[180px] flex-[3]' },
+  { key: 'service', label: 'Type', className: 'min-w-[80px] flex-1' },
+  { key: 'region', label: 'Region', className: 'min-w-[90px] flex-1', hideOnMobile: true },
+  { key: 'status', label: 'Status', className: 'min-w-[80px] flex-1', hideOnMobile: true },
+  { key: 'estimatedCost', label: 'Est. Cost', className: 'min-w-[70px] flex-1' },
+  { key: 'createdAt', label: 'Created', className: 'min-w-[80px] flex-1', hideOnMobile: true },
 ];
 
 export function ResourceTable() {
@@ -118,14 +118,14 @@ export function ResourceTable() {
   return (
     <div>
       {/* Toolbar: filters + bulk action */}
-      <div className="mb-4 flex items-start gap-3">
-        <div className="flex-1">
+      <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+        <div className="flex-1 min-w-0">
           <FilterBar filters={filters} onChange={setFilters} totalCount={resources.length} filteredCount={filtered.length} resources={resources} />
         </div>
         {selectedOnPage.size > 0 && (
           <button
             onClick={() => navigate('/deletion')}
-            className="flex items-center gap-2 px-4 py-2 bg-danger/15 hover:bg-danger/25 text-danger text-sm font-medium rounded-lg border border-danger/30 transition-colors whitespace-nowrap shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-danger/15 hover:bg-danger/25 text-danger text-sm font-medium rounded-lg border border-danger/30 transition-colors whitespace-nowrap shrink-0"
           >
             <Trash2 size={15} />
             Delete {selectedOnPage.size} selected
@@ -134,138 +134,140 @@ export function ResourceTable() {
       </div>
 
       <div className="bg-bg-secondary rounded-xl border border-border overflow-hidden">
-        {/* Header row */}
-        <div className="flex items-center px-3 py-2.5 border-b border-border bg-bg-tertiary/50 text-[11px] font-medium text-text-muted uppercase tracking-wider">
-          <div className="w-9 shrink-0 pl-1">
-            <input
-              type="checkbox"
-              checked={allSelectedOnPage}
-              ref={(el) => {
-                if (el) el.indeterminate = someSelectedOnPage;
-              }}
-              onChange={toggleAll}
-              className="rounded border-border accent-accent"
-            />
-          </div>
-          {COLUMNS.map((col) => (
-            <button
-              key={col.key}
-              onClick={() => toggleSort(col.key)}
-              className={`flex items-center gap-1 hover:text-text-primary transition-colors ${col.className}`}
-            >
-              {col.label}
-              <ArrowUpDown size={11} className={sortKey === col.key ? 'text-accent' : 'opacity-30'} />
-            </button>
-          ))}
-          <div className="w-[70px] shrink-0" />
-        </div>
-
-        {/* Rows */}
-        <div key={`rows-${filtered.length}-${filters.services.join()}-${filters.regions.join()}-${filters.managed}-${filters.search}`} className="max-h-[calc(100vh-280px)] overflow-y-auto">
-          {filtered.length === 0 ? (
-            <div className="px-4 py-12 text-center text-sm text-text-muted">No resources match your filters.</div>
-          ) : (
-            <div>
-              {filtered.map((r, idx) => {
-                const inQueue = queue.includes(r.id);
-                const statusLabel = r.status.split(':')[0].replace(/_/g, ' ');
-                return (
-                  <div
-                    key={`${r.id}::${r.region}::${idx}`}
-                    className={`flex items-center px-3 py-2 border-b border-border/40 hover:bg-bg-hover/50 transition-colors cursor-pointer ${
-                      inQueue ? 'bg-accent/5' : ''
-                    }`}
-                    onClick={() => setSelectedId(r.id)}
-                  >
-                    {/* Checkbox */}
-                    <div className="w-9 shrink-0 pl-1" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={inQueue}
-                        onChange={() => (inQueue ? removeFromQueue(r.id) : addToQueue([r.id]))}
-                        className="rounded border-border accent-accent"
-                      />
-                    </div>
-
-                    {/* Resource name + badge */}
-                    <div className="w-[36%] min-w-0 flex items-center gap-2">
-                      <ServiceIcon service={r.service} size={15} className="shrink-0" />
-                      <span className="text-sm font-medium text-text-primary truncate">
-                        {truncate(r.name, 32)}
-                      </span>
-                      {r.managed ? (
-                        <Badge label="CF" variant="managed" />
-                      ) : r.type !== 'cloudformation-stack' ? (
-                        <Badge label="Loose" variant="loose" />
-                      ) : null}
-                    </div>
-
-                    {/* Service / Type */}
-                    <div className="w-[10%] text-xs text-text-secondary">{formatResourceType(r.type)}</div>
-
-                    {/* Region */}
-                    <div className="w-[12%] text-xs text-text-secondary">{r.region}</div>
-
-                    {/* Status */}
-                    <div className="w-[12%]">
-                      <Badge label={truncate(statusLabel, 18)} />
-                    </div>
-
-                    {/* Est. Cost */}
-                    <div className="w-[10%] text-xs text-text-secondary font-mono">{formatEstimate(estimates[r.id])}</div>
-
-                    {/* Created */}
-                    <div className="w-[10%] text-xs text-text-secondary">{formatRelativeDate(r.createdAt)}</div>
-
-                    {/* S3 actions / Chevron */}
-                    <div className="w-[70px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                      {r.type === 's3-bucket' && (
-                        <>
-                          {/* Inline stats display */}
-                          {bucketStats[r.name] && !statsLoading[r.name] && (
-                            <span className="text-[10px] text-text-muted whitespace-nowrap mr-1">
-                              {formatNumber(bucketStats[r.name].objectCount)} / {formatBytes(bucketStats[r.name].totalSize)}
-                            </span>
-                          )}
-                          {/* Size fetch icon */}
-                          {!bucketStats[r.name] && !statsLoading[r.name] && !statsErrors[r.name] && (
-                            <button
-                              onClick={() => profile && fetchStats(r.name, profile)}
-                              className="p-0.5 text-text-muted hover:text-accent transition-colors"
-                              title="Get bucket size"
-                            >
-                              <HardDrive size={13} />
-                            </button>
-                          )}
-                          {statsLoading[r.name] && (
-                            <Loader2 size={13} className="text-accent animate-spin" />
-                          )}
-                          {statsErrors[r.name] && (
-                            <button
-                              onClick={() => profile && fetchStats(r.name, profile)}
-                              className="p-0.5 text-danger hover:text-danger/80 transition-colors"
-                              title={statsErrors[r.name]}
-                            >
-                              <AlertCircle size={13} />
-                            </button>
-                          )}
-                          {/* Browse icon */}
-                          <button
-                            onClick={() => navigate(`/s3/${encodeURIComponent(r.name)}`)}
-                            className="p-0.5 text-text-muted hover:text-accent transition-colors"
-                            title="Browse objects"
-                          >
-                            <FolderOpen size={13} />
-                          </button>
-                        </>
-                      )}
-                      <ChevronRight size={14} className="text-text-muted shrink-0" onClick={() => setSelectedId(r.id)} />
-                    </div>
-                  </div>
-                );
-              })}
+        <div className="overflow-x-auto">
+          {/* Header row */}
+          <div className="flex items-center px-3 py-2.5 border-b border-border bg-bg-tertiary/50 text-[11px] font-medium text-text-muted uppercase tracking-wider min-w-[500px]">
+            <div className="w-9 shrink-0 pl-1">
+              <input
+                type="checkbox"
+                checked={allSelectedOnPage}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelectedOnPage;
+                }}
+                onChange={toggleAll}
+                className="rounded border-border accent-accent"
+              />
             </div>
-          )}
+            {COLUMNS.map((col) => (
+              <button
+                key={col.key}
+                onClick={() => toggleSort(col.key)}
+                className={`flex items-center gap-1 hover:text-text-primary transition-colors ${col.className} ${col.hideOnMobile ? 'hidden md:flex' : ''}`}
+              >
+                {col.label}
+                <ArrowUpDown size={11} className={sortKey === col.key ? 'text-accent' : 'opacity-30'} />
+              </button>
+            ))}
+            <div className="w-8 md:w-[70px] shrink-0" />
+          </div>
+
+          {/* Rows */}
+          <div key={`rows-${filtered.length}-${filters.services.join()}-${filters.regions.join()}-${filters.managed}-${filters.search}`} className="max-h-[calc(100vh-280px)] overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-12 text-center text-sm text-text-muted">No resources match your filters.</div>
+            ) : (
+              <div>
+                {filtered.map((r, idx) => {
+                  const inQueue = queue.includes(r.id);
+                  const statusLabel = r.status.split(':')[0].replace(/_/g, ' ');
+                  return (
+                    <div
+                      key={`${r.id}::${r.region}::${idx}`}
+                      className={`flex items-center px-3 py-2 border-b border-border/40 hover:bg-bg-hover/50 transition-colors cursor-pointer min-w-[500px] ${
+                        inQueue ? 'bg-accent/5' : ''
+                      }`}
+                      onClick={() => setSelectedId(r.id)}
+                    >
+                      {/* Checkbox */}
+                      <div className="w-9 shrink-0 pl-1" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={inQueue}
+                          onChange={() => (inQueue ? removeFromQueue(r.id) : addToQueue([r.id]))}
+                          className="rounded border-border accent-accent"
+                        />
+                      </div>
+
+                      {/* Resource name + badge */}
+                      <div className="min-w-[180px] flex-[3] min-w-0 flex items-center gap-2">
+                        <ServiceIcon service={r.service} size={15} className="shrink-0" />
+                        <span className="text-sm font-medium text-text-primary truncate">
+                          {truncate(r.name, 32)}
+                        </span>
+                        {r.managed ? (
+                          <Badge label="CF" variant="managed" />
+                        ) : r.type !== 'cloudformation-stack' ? (
+                          <Badge label="Loose" variant="loose" />
+                        ) : null}
+                      </div>
+
+                      {/* Service / Type */}
+                      <div className="min-w-[80px] flex-1 text-xs text-text-secondary">{formatResourceType(r.type)}</div>
+
+                      {/* Region — hidden on mobile */}
+                      <div className="min-w-[90px] flex-1 text-xs text-text-secondary hidden md:block">{r.region}</div>
+
+                      {/* Status — hidden on mobile */}
+                      <div className="min-w-[80px] flex-1 hidden md:block">
+                        <Badge label={truncate(statusLabel, 18)} />
+                      </div>
+
+                      {/* Est. Cost */}
+                      <div className="min-w-[70px] flex-1 text-xs text-text-secondary font-mono">{formatEstimate(estimates[r.id])}</div>
+
+                      {/* Created — hidden on mobile */}
+                      <div className="min-w-[80px] flex-1 text-xs text-text-secondary hidden md:block">{formatRelativeDate(r.createdAt)}</div>
+
+                      {/* S3 actions / Chevron */}
+                      <div className="w-8 md:w-[70px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        {r.type === 's3-bucket' && (
+                          <>
+                            {/* Inline stats display */}
+                            {bucketStats[r.name] && !statsLoading[r.name] && (
+                              <span className="text-[10px] text-text-muted whitespace-nowrap mr-1 hidden md:inline">
+                                {formatNumber(bucketStats[r.name].objectCount)} / {formatBytes(bucketStats[r.name].totalSize)}
+                              </span>
+                            )}
+                            {/* Size fetch icon */}
+                            {!bucketStats[r.name] && !statsLoading[r.name] && !statsErrors[r.name] && (
+                              <button
+                                onClick={() => profile && fetchStats(r.name, profile)}
+                                className="p-0.5 text-text-muted hover:text-accent transition-colors hidden md:block"
+                                title="Get bucket size"
+                              >
+                                <HardDrive size={13} />
+                              </button>
+                            )}
+                            {statsLoading[r.name] && (
+                              <Loader2 size={13} className="text-accent animate-spin hidden md:block" />
+                            )}
+                            {statsErrors[r.name] && (
+                              <button
+                                onClick={() => profile && fetchStats(r.name, profile)}
+                                className="p-0.5 text-danger hover:text-danger/80 transition-colors hidden md:block"
+                                title={statsErrors[r.name]}
+                              >
+                                <AlertCircle size={13} />
+                              </button>
+                            )}
+                            {/* Browse icon */}
+                            <button
+                              onClick={() => navigate(`/s3/${encodeURIComponent(r.name)}`)}
+                              className="p-0.5 text-text-muted hover:text-accent transition-colors hidden md:block"
+                              title="Browse objects"
+                            >
+                              <FolderOpen size={13} />
+                            </button>
+                          </>
+                        )}
+                        <ChevronRight size={14} className="text-text-muted shrink-0" onClick={() => setSelectedId(r.id)} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

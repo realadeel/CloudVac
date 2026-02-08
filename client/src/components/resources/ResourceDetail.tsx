@@ -45,7 +45,7 @@ export function ResourceDetail({ resource: r, onClose }: Props) {
   const stats = isS3 ? bucketStats[r.name] : undefined;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[420px] bg-bg-secondary border-l border-border z-30 shadow-2xl overflow-y-auto">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-bg-secondary border-l border-border z-30 shadow-2xl overflow-y-auto">
       <div className="sticky top-0 bg-bg-secondary border-b border-border p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ServiceIcon service={r.service} size={20} />
