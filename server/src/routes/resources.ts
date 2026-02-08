@@ -1,19 +1,11 @@
 import { Router } from 'express';
-import type { Resource } from '../../../shared/types.js';
 import { resourceCache } from './scan.js';
 import { getScanResults } from '../db/index.js';
+import { deduplicateResources } from './resource-utils.js';
+
+export { deduplicateResources } from './resource-utils.js';
 
 const router = Router();
-
-export function deduplicateResources(resources: Resource[]): Resource[] {
-  const seen = new Set<string>();
-  return resources.filter((r) => {
-    const key = `${r.id}::${r.region}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
 
 function getResourceData(profileName: string) {
   // Try in-memory cache first (fastest)

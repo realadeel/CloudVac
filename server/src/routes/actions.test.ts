@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findOrphanedLogGroups } from './actions.js';
+import { findOrphanedLogGroups } from './resource-utils.js';
 import type { Resource } from '../../../shared/types.js';
 
 function makeResource(overrides: Partial<Resource> & { type: Resource['type'] }): Resource {
