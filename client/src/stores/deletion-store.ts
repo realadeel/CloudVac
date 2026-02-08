@@ -35,6 +35,7 @@ interface DeletionStore {
   setProgress: (p: number) => void;
   setError: (e: string | null) => void;
   reset: () => void;
+  retryFailed: () => void;
 }
 
 export const useDeletionStore = create<DeletionStore>((set) => ({
@@ -66,4 +67,16 @@ export const useDeletionStore = create<DeletionStore>((set) => ({
   setProgress: (progress) => set({ progress }),
   setError: (error) => set({ error }),
   reset: () => set({ jobId: null, status: 'idle', steps: [], warnings: [], progress: 0, error: null }),
+  retryFailed: () => set((s) => {
+    const failedIds = s.steps.filter((step) => step.status === 'failed').map((step) => step.id);
+    return {
+      queue: failedIds,
+      jobId: null,
+      status: 'idle',
+      steps: [],
+      warnings: [],
+      progress: 0,
+      error: null,
+    };
+  }),
 }));

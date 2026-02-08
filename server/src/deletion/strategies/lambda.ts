@@ -5,5 +5,5 @@ import * as clients from '../../aws/clients.js';
 
 export async function deleteLambdaFunction(profile: AWSProfile, resource: Resource): Promise<void> {
   const client = clients.lambda(profile, resource.region as Region);
-  await client.send(new DeleteFunctionCommand({ FunctionName: resource.id }));
+  await client.send(new DeleteFunctionCommand({ FunctionName: resource.arn ?? resource.id }));
 }

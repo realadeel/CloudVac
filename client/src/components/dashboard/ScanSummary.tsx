@@ -1,6 +1,25 @@
-import { Layers, Server, Unlink, CloudCog, Box } from 'lucide-react';
+import { Layers, Server, Unlink, CloudCog, Box, Zap } from 'lucide-react';
 import { useScanStore } from '../../stores/scan-store';
 import { ServiceIcon } from '../shared/ServiceIcon';
+import { OrphanedLogGroupAction } from './Actions';
+
+const SERVICE_LABELS: Record<string, string> = {
+  ec2: 'EC2',
+  rds: 'RDS',
+  elb: 'ELB',
+  ebs: 'EBS',
+  nat: 'NAT',
+  eip: 'EIP',
+  lambda: 'Lambda',
+  s3: 'S3',
+  dynamodb: 'DynamoDB',
+  vpc: 'VPC',
+  cloudwatch: 'CloudWatch',
+  sns: 'SNS',
+  sqs: 'SQS',
+  apigateway: 'API Gateway',
+  cloudformation: 'CloudFormation',
+};
 
 export function ScanSummary() {
   const { status, resources, totalStacks } = useScanStore();
@@ -62,10 +81,20 @@ export function ScanSummary() {
             .map(([svc, count]) => (
               <div key={svc} className="flex items-center gap-2 bg-bg-tertiary rounded-lg px-3 py-2">
                 <ServiceIcon service={svc} size={14} />
-                <span className="text-sm text-text-secondary">{svc}</span>
+                <span className="text-sm text-text-secondary">{SERVICE_LABELS[svc] ?? svc}</span>
                 <span className="text-sm font-semibold text-text-primary">{count}</span>
               </div>
             ))}
+        </div>
+      )}
+
+      {status === 'complete' && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={14} className="text-accent" />
+            <span className="text-xs text-text-muted uppercase tracking-wider font-medium">Actions</span>
+          </div>
+          <OrphanedLogGroupAction />
         </div>
       )}
     </div>

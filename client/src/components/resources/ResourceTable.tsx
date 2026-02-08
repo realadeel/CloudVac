@@ -166,12 +166,12 @@ export function ResourceTable() {
             <div className="px-4 py-12 text-center text-sm text-text-muted">No resources match your filters.</div>
           ) : (
             <div>
-              {filtered.map((r) => {
+              {filtered.map((r, idx) => {
                 const inQueue = queue.includes(r.id);
                 const statusLabel = r.status.split(':')[0].replace(/_/g, ' ');
                 return (
                   <div
-                    key={r.id}
+                    key={`${r.id}::${r.region}::${idx}`}
                     className={`flex items-center px-3 py-2 border-b border-border/40 hover:bg-bg-hover/50 transition-colors cursor-pointer ${
                       inQueue ? 'bg-accent/5' : ''
                     }`}

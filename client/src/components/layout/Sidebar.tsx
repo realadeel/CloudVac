@@ -1,15 +1,17 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Server, Trash2, ScrollText, CloudCog } from 'lucide-react';
+import { LayoutDashboard, Server, Trash2, CloudCog } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { useDeletionStore } from '../../stores/deletion-store';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/resources', label: 'Resources', icon: Server },
   { to: '/deletion', label: 'Deletion Queue', icon: Trash2 },
-  { to: '/logs', label: 'Activity Log', icon: ScrollText },
 ];
 
 export function Sidebar() {
+  const queueCount = useDeletionStore((s) => s.queue.length);
+
   return (
     <aside className="w-56 h-screen bg-bg-secondary border-r border-border flex flex-col fixed left-0 top-0">
       <div className="p-5 border-b border-border">
@@ -36,6 +38,11 @@ export function Sidebar() {
           >
             <link.icon size={18} />
             {link.label}
+            {link.to === '/deletion' && queueCount > 0 && (
+              <span className="ml-auto bg-accent text-bg-primary text-[11px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                {queueCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -8,6 +8,7 @@ import resourceRoutes from './routes/resources.js';
 import deleteRoutes from './routes/delete.js';
 import emptyBucketRoutes from './routes/empty-bucket.js';
 import s3Routes from './routes/s3.js';
+import actionRoutes from './routes/actions.js';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(resourceRoutes);
 app.use(deleteRoutes);
 app.use(emptyBucketRoutes);
 app.use(s3Routes);
+app.use(actionRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

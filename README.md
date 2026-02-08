@@ -20,7 +20,7 @@
 
 ---
 
-CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, estimates per-resource costs, and handles dependency-aware deletion with dry-run safety.
+CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, estimates per-resource costs, detects orphaned CloudWatch log groups, and handles dependency-aware deletion with dry-run safety.
 
 Everything runs locally. No telemetry. No external calls. Your credentials never leave your machine.
 
@@ -62,6 +62,7 @@ npm run test:coverage # with coverage report
 - [Deletion Safety](#deletion-safety)
 - [Deletion Ordering](#deletion-ordering)
 - [Cost Estimation](#cost-estimation)
+- [Orphaned Log Group Detection](#orphaned-log-group-detection)
 - [S3 Features](#s3-features)
 - [Caching](#caching)
 - [Architecture](#architecture)
@@ -374,6 +375,23 @@ When you queue resources for deletion, the **savings banner** shows your current
 
 ---
 
+## Orphaned Log Group Detection
+
+CloudWatch log groups often outlive the resources that created them. CloudVac detects orphaned log groups by matching log group name prefixes to your scanned resources:
+
+| Log Group Pattern | Matched Against |
+|---|---|
+| `/aws/lambda/<name>` | Lambda functions |
+| `/aws/rds/instance/<name>/*` | RDS instances |
+| `/aws/rds/cluster/<name>/*` | RDS clusters |
+| `/aws/apigateway/<id>` | API Gateway REST and HTTP APIs |
+
+From the dashboard **Actions** section, click **Scan** to find orphans. Results open in a modal showing each orphaned log group with its stored bytes, region, and the missing resource it references. You can queue individual log groups or all of them for deletion in one click.
+
+Log groups that don't match any known AWS prefix (e.g., custom application logs) are left alone.
+
+---
+
 ## S3 Features
 
 **On-demand bucket sizing** — Click the hard drive icon on any S3 bucket to compute total object count and size. Results are cached in SQLite and load instantly on subsequent visits.
@@ -431,7 +449,7 @@ cloudvac/
 │   └── src/
 │       ├── stores/            Zustand v5 stores (6 stores)
 │       ├── hooks/             SSE lifecycle hooks
-│       ├── pages/             5 pages (Dashboard, Resources, S3, Deletion, Logs)
+│       ├── pages/             4 pages (Dashboard, Resources, S3, Deletion)
 │       ├── components/        UI components (layout, dashboard, resources, deletion, s3, shared)
 │       └── lib/               Utilities (format, cn)
 │
@@ -457,6 +475,7 @@ cloudvac/
 | `/api/s3/:bucket/stats?profile=X` | GET | Compute bucket size/count (cached) |
 | `/api/s3/:bucket/objects?profile=X` | GET | Paginated object listing with folder navigation |
 | `/api/empty-bucket` | POST | SSE stream: empties an S3 bucket |
+| `/api/actions/orphaned-log-groups?profile=X` | GET | Detect orphaned CloudWatch log groups |
 
 ---
 

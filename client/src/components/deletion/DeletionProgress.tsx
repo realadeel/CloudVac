@@ -9,7 +9,7 @@ import { useEmptyBucket } from '../../hooks/use-empty-bucket';
 const S3_RELATED_TYPES = new Set(['s3-bucket', 'cloudformation-stack']);
 
 export function DeletionProgress() {
-  const { status, steps, warnings, progress, dryRun, reset } = useDeletionStore();
+  const { status, steps, warnings, progress, dryRun, reset, retryFailed } = useDeletionStore();
   const { status: emptyStatus, message: emptyMsg, error: emptyErr, emptyBucket, resetEmpty } = useEmptyBucket();
   const [emptyingStepId, setEmptyingStepId] = useState<string | null>(null);
 
@@ -108,11 +108,11 @@ export function DeletionProgress() {
           )}
           <div className="flex gap-2 pl-6">
             <button
-              onClick={reset}
+              onClick={retryFailed}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
             >
               <RotateCcw size={13} />
-              Retry Failed
+              Retry {failedSteps.length} Failed
             </button>
           </div>
         </div>

@@ -13,7 +13,7 @@ export async function scanLambda(profile: AWSProfile, region: Region): Promise<R
 
     for (const fn of resp.Functions ?? []) {
       resources.push({
-        id: fn.FunctionName!,
+        id: fn.FunctionArn!,
         arn: fn.FunctionArn,
         type: 'lambda-function',
         name: fn.FunctionName!,

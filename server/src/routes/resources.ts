@@ -1,22 +1,34 @@
 import { Router } from 'express';
+import type { Resource } from '../../../shared/types.js';
 import { resourceCache } from './scan.js';
 import { getScanResults } from '../db/index.js';
 
 const router = Router();
 
+export function deduplicateResources(resources: Resource[]): Resource[] {
+  const seen = new Set<string>();
+  return resources.filter((r) => {
+    const key = `${r.id}::${r.region}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function getResourceData(profileName: string) {
   // Try in-memory cache first (fastest)
   const memCached = resourceCache.get(profileName);
   if (memCached) {
-    return { ...memCached, source: 'memory' as const, scannedAt: null };
+    return { resources: deduplicateResources(memCached.resources), stacks: memCached.stacks, source: 'memory' as const, scannedAt: null };
   }
 
   // Fall back to SQLite cache
   const dbCached = getScanResults(profileName);
   if (dbCached) {
-    // Warm the in-memory cache
-    resourceCache.set(profileName, { resources: dbCached.resources, stacks: dbCached.stacks });
-    return { resources: dbCached.resources, stacks: dbCached.stacks, source: 'database' as const, scannedAt: dbCached.scannedAt };
+    const resources = deduplicateResources(dbCached.resources);
+    // Warm the in-memory cache with clean data
+    resourceCache.set(profileName, { resources, stacks: dbCached.stacks });
+    return { resources, stacks: dbCached.stacks, source: 'database' as const, scannedAt: dbCached.scannedAt };
   }
 
   return null;

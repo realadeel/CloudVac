@@ -158,13 +158,23 @@ export async function runFullScan(
 
   await Promise.all(executing);
 
+  // Deduplicate resources by id (some scanners may return the same resource twice)
+  const seen = new Map<string, Resource>();
+  for (const r of allResources) {
+    const key = `${r.id}::${r.region}`;
+    if (!seen.has(key)) {
+      seen.set(key, r);
+    }
+  }
+  const dedupedResources = [...seen.values()];
+
   emit({
     type: 'scan_complete',
-    totalResources: allResources.length,
-    managed: allResources.filter((r) => r.managed).length,
-    loose: allResources.filter((r) => !r.managed && r.type !== 'cloudformation-stack').length,
+    totalResources: dedupedResources.length,
+    managed: dedupedResources.filter((r) => r.managed).length,
+    loose: dedupedResources.filter((r) => !r.managed && r.type !== 'cloudformation-stack').length,
     stacks: allStacks.length,
   });
 
-  return { resources: allResources, stacks: allStacks };
+  return { resources: dedupedResources, stacks: allStacks };
 }
