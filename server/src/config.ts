@@ -26,5 +26,5 @@ export const SERVICE_COLORS: Record<string, string> = {
 };
 
 export const PORT = 3001;
-export const SCAN_CONCURRENCY = 5;
+export const SCAN_CONCURRENCY = 8;
 export const DELETE_CONCURRENCY = 3;

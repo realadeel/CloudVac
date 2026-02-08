@@ -29,8 +29,8 @@ export function ScanSummary() {
   }
 
   const cards = [
-    { label: 'Total Resources', value: resources.length, icon: Server, color: 'text-accent' },
-    { label: 'CF Stacks', value: stacks, icon: Layers, color: 'text-cloudformation' },
+    { label: 'Total', value: resources.length, icon: Server, color: 'text-accent' },
+    { label: 'Stacks', value: stacks, icon: Layers, color: 'text-cloudformation' },
     { label: 'Managed', value: managed, icon: CloudCog, color: 'text-info' },
     { label: 'Loose', value: loose, icon: Unlink, color: 'text-warning' },
   ];
@@ -46,8 +46,8 @@ export function ScanSummary() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         {cards.map((c) => (
           <div key={c.label} className="bg-bg-tertiary rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <c.icon size={16} className={c.color} />
+            <div className="flex items-center gap-2 mb-2 whitespace-nowrap">
+              <c.icon size={16} className={`${c.color} shrink-0`} />
               <span className="text-xs text-text-muted uppercase tracking-wider">{c.label}</span>
             </div>
             <p className="text-2xl font-bold">{c.value}</p>

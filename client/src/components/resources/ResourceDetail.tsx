@@ -2,9 +2,10 @@ import { X, Plus, Minus, Trash2, Loader2, CheckCircle2, AlertCircle, FolderOpen 
 import { useNavigate } from 'react-router-dom';
 import { ServiceIcon } from '../shared/ServiceIcon';
 import { Badge } from '../shared/Badge';
-import { formatDate, formatBytes, formatNumber } from '../../lib/format';
+import { formatDate, formatBytes, formatNumber, formatEstimate } from '../../lib/format';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useBucketStore } from '../../stores/bucket-store';
+import { useCostStore } from '../../stores/cost-store';
 import { useProfileStore } from '../../stores/profile-store';
 import { useEmptyBucket } from '../../hooks/use-empty-bucket';
 
@@ -37,6 +38,7 @@ export function ResourceDetail({ resource: r, onClose }: Props) {
   const bucketStats = useBucketStore((s) => s.stats);
   const statsLoading = useBucketStore((s) => s.statsLoading);
   const fetchStats = useBucketStore((s) => s.fetchStats);
+  const estimates = useCostStore((s) => s.estimates);
   const navigate = useNavigate();
 
   const isS3 = r.type === 's3-bucket';
@@ -159,6 +161,11 @@ export function ResourceDetail({ resource: r, onClose }: Props) {
           <Row label="Region" value={r.region} />
           <Row label="Status">
             <Badge label={r.status} />
+          </Row>
+          <Row label="Est. Cost">
+            <span className="text-xs text-text-primary font-mono">
+              {estimates[r.id] != null ? `${formatEstimate(estimates[r.id])}/mo` : 'N/A'}
+            </span>
           </Row>
           <Row label="Source">
             <Badge label={r.managed ? 'Managed' : 'Loose'} variant={r.managed ? 'managed' : 'loose'} />

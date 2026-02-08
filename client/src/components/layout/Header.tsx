@@ -1,9 +1,10 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { Scan, ChevronDown, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useProfileStore } from '../../stores/profile-store';
 import { useScanStore } from '../../stores/scan-store';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useBucketStore } from '../../stores/bucket-store';
+import { useCostStore } from '../../stores/cost-store';
 import { useScan } from '../../hooks/use-scan';
 import { Spinner } from '../shared/Spinner';
 import { ProgressBar } from '../shared/ProgressBar';
@@ -21,20 +22,33 @@ export function Header() {
   const toggleDryRun = useDeletionStore((s) => s.toggleDryRun);
   const clearQueue = useDeletionStore((s) => s.clearQueue);
   const loadCachedStats = useBucketStore((s) => s.loadCachedStats);
+  const fetchEstimates = useCostStore((s) => s.fetchEstimates);
   const { startScan } = useScan();
 
   useEffect(() => {
     fetchProfiles();
   }, [fetchProfiles]);
 
-  // When profile changes, load cached resources + bucket stats instantly
+  // When profile changes, load cached resources + bucket stats + cost estimates instantly
   useEffect(() => {
     if (selectedProfile && scanStatus !== 'scanning') {
       clearQueue();
       loadCachedResources(selectedProfile);
       loadCachedStats(selectedProfile);
+      fetchEstimates(selectedProfile);
     }
   }, [selectedProfile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When scan completes, refresh cost estimates (new resources may have been found)
+  const prevScanStatus = useRef(scanStatus);
+  useEffect(() => {
+    if (prevScanStatus.current === 'scanning' && scanStatus === 'complete' && selectedProfile) {
+      // Small delay so the resources fetch can finish first
+      const timer = setTimeout(() => fetchEstimates(selectedProfile), 500);
+      return () => clearTimeout(timer);
+    }
+    prevScanStatus.current = scanStatus;
+  }, [scanStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleProfileChange = useCallback((name: string) => {
     selectProfile(name);

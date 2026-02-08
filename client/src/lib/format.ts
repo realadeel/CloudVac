@@ -75,3 +75,10 @@ const RESOURCE_TYPE_LABELS: Record<string, string> = {
 export function formatResourceType(type: string): string {
   return RESOURCE_TYPE_LABELS[type] ?? type;
 }
+
+export function formatEstimate(cost: number | null): string {
+  if (cost == null) return '\u2014';
+  if (cost === 0) return '$0';
+  if (cost < 0.01) return '<$0.01';
+  return formatCurrency(cost);
+}

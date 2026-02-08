@@ -12,7 +12,7 @@ export async function scanCloudWatch(profile: AWSProfile, region: Region): Promi
   let nextToken: string | undefined;
 
   do {
-    const resp = await logsClient.send(new DescribeLogGroupsCommand({ nextToken, limit: 50 }));
+    const resp = await logsClient.send(new DescribeLogGroupsCommand({ nextToken }));
 
     for (const lg of resp.logGroups ?? []) {
       resources.push({

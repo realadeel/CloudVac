@@ -4,23 +4,25 @@ import { useNavigate } from 'react-router-dom';
 import { useScanStore } from '../../stores/scan-store';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useBucketStore } from '../../stores/bucket-store';
+import { useCostStore } from '../../stores/cost-store';
 import { useProfileStore } from '../../stores/profile-store';
 import { ServiceIcon } from '../shared/ServiceIcon';
 import { Badge } from '../shared/Badge';
-import { formatRelativeDate, formatBytes, formatNumber, truncate, formatResourceType } from '../../lib/format';
+import { formatRelativeDate, formatBytes, formatNumber, truncate, formatResourceType, formatEstimate } from '../../lib/format';
 import { FilterBar, type Filters } from './FilterBar';
 import { ResourceDetail } from './ResourceDetail';
 import { EmptyState } from '../shared/EmptyState';
 
-type SortKey = 'name' | 'service' | 'region' | 'status' | 'createdAt';
+type SortKey = 'name' | 'service' | 'region' | 'status' | 'estimatedCost' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 
 const COLUMNS: { key: SortKey; label: string; className: string }[] = [
-  { key: 'name', label: 'Resource', className: 'w-[40%]' },
-  { key: 'service', label: 'Type', className: 'w-[12%]' },
-  { key: 'region', label: 'Region', className: 'w-[14%]' },
-  { key: 'status', label: 'Status', className: 'w-[16%]' },
-  { key: 'createdAt', label: 'Created', className: 'w-[12%]' },
+  { key: 'name', label: 'Resource', className: 'w-[36%]' },
+  { key: 'service', label: 'Type', className: 'w-[10%]' },
+  { key: 'region', label: 'Region', className: 'w-[12%]' },
+  { key: 'status', label: 'Status', className: 'w-[12%]' },
+  { key: 'estimatedCost', label: 'Est. Cost', className: 'w-[10%]' },
+  { key: 'createdAt', label: 'Created', className: 'w-[10%]' },
 ];
 
 export function ResourceTable() {
@@ -35,6 +37,7 @@ export function ResourceTable() {
   const statsLoading = useBucketStore((s) => s.statsLoading);
   const statsErrors = useBucketStore((s) => s.statsErrors);
   const fetchStats = useBucketStore((s) => s.fetchStats);
+  const estimates = useCostStore((s) => s.estimates);
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState<Filters>({ search: '', services: [], regions: [], types: [], managed: 'all' });
@@ -63,6 +66,15 @@ export function ResourceTable() {
     filtered = filtered.filter((r) => !r.managed && r.type !== 'cloudformation-stack');
   }
   filtered = [...filtered].sort((a, b) => {
+    if (sortKey === 'estimatedCost') {
+      const av = estimates[a.id];
+      const bv = estimates[b.id];
+      // nulls always sort to bottom regardless of direction
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return sortDir === 'asc' ? av - bv : bv - av;
+    }
     const av = (a as any)[sortKey] ?? '';
     const bv = (b as any)[sortKey] ?? '';
     const cmp = String(av).localeCompare(String(bv));
@@ -74,7 +86,7 @@ export function ResourceTable() {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir('asc');
+      setSortDir(key === 'estimatedCost' ? 'desc' : 'asc');
     }
   };
 
@@ -176,7 +188,7 @@ export function ResourceTable() {
                     </div>
 
                     {/* Resource name + badge */}
-                    <div className="w-[40%] min-w-0 flex items-center gap-2">
+                    <div className="w-[36%] min-w-0 flex items-center gap-2">
                       <ServiceIcon service={r.service} size={15} className="shrink-0" />
                       <span className="text-sm font-medium text-text-primary truncate">
                         {truncate(r.name, 32)}
@@ -189,18 +201,21 @@ export function ResourceTable() {
                     </div>
 
                     {/* Service / Type */}
-                    <div className="w-[12%] text-xs text-text-secondary">{formatResourceType(r.type)}</div>
+                    <div className="w-[10%] text-xs text-text-secondary">{formatResourceType(r.type)}</div>
 
                     {/* Region */}
-                    <div className="w-[14%] text-xs text-text-secondary">{r.region}</div>
+                    <div className="w-[12%] text-xs text-text-secondary">{r.region}</div>
 
                     {/* Status */}
-                    <div className="w-[16%]">
+                    <div className="w-[12%]">
                       <Badge label={truncate(statusLabel, 18)} />
                     </div>
 
+                    {/* Est. Cost */}
+                    <div className="w-[10%] text-xs text-text-secondary font-mono">{formatEstimate(estimates[r.id])}</div>
+
                     {/* Created */}
-                    <div className="w-[12%] text-xs text-text-secondary">{formatRelativeDate(r.createdAt)}</div>
+                    <div className="w-[10%] text-xs text-text-secondary">{formatRelativeDate(r.createdAt)}</div>
 
                     {/* S3 actions / Chevron */}
                     <div className="w-[70px] shrink-0 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>

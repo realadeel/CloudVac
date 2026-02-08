@@ -14,6 +14,12 @@ interface CostStore {
   loading: boolean;
   error: string | null;
   fetchCosts: (profile: string) => Promise<void>;
+
+  // Per-resource cost estimates
+  estimates: Record<string, number | null>;
+  estimatesLoading: boolean;
+  fetchEstimates: (profile: string) => Promise<void>;
+
   reset: () => void;
 }
 
@@ -23,6 +29,9 @@ export const useCostStore = create<CostStore>((set) => ({
   byService: [],
   loading: false,
   error: null,
+
+  estimates: {},
+  estimatesLoading: false,
 
   fetchCosts: async (profile) => {
     set({ loading: true, error: null });
@@ -36,5 +45,17 @@ export const useCostStore = create<CostStore>((set) => ({
     }
   },
 
-  reset: () => set({ period: null, total: 0, byService: [], loading: false, error: null }),
+  fetchEstimates: async (profile) => {
+    set({ estimatesLoading: true });
+    try {
+      const data = await fetchJSON<{ estimates: Record<string, number | null> }>(
+        `/costs/estimates?profile=${encodeURIComponent(profile)}`
+      );
+      set({ estimates: data.estimates, estimatesLoading: false });
+    } catch {
+      set({ estimatesLoading: false });
+    }
+  },
+
+  reset: () => set({ period: null, total: 0, byService: [], loading: false, error: null, estimates: {}, estimatesLoading: false }),
 }));

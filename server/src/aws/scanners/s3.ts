@@ -9,34 +9,38 @@ export async function scanS3(profile: AWSProfile, _region: Region): Promise<Reso
   if (_region !== 'us-east-1') return [];
 
   const client = clients.s3(profile, 'us-east-1');
-  const resources: Resource[] = [];
 
   const resp = await client.send(new ListBucketsCommand({}));
+  const buckets = resp.Buckets ?? [];
 
-  for (const bucket of resp.Buckets ?? []) {
-    let bucketRegion = 'us-east-1';
-    try {
-      const locResp = await client.send(new GetBucketLocationCommand({ Bucket: bucket.Name! }));
-      bucketRegion = locResp.LocationConstraint || 'us-east-1';
-    } catch {
-      // If we can't get location, skip or default
-    }
+  // Fetch all bucket locations in parallel
+  const located = await Promise.all(
+    buckets.map(async (bucket) => {
+      let region = 'us-east-1';
+      try {
+        const locResp = await client.send(new GetBucketLocationCommand({ Bucket: bucket.Name! }));
+        region = locResp.LocationConstraint || 'us-east-1';
+      } catch {
+        // Default to us-east-1 if we can't get location
+      }
+      return { bucket, region };
+    })
+  );
 
-    // Only include buckets in our target regions
-    if (!REGIONS.includes(bucketRegion as Region)) continue;
+  const resources: Resource[] = [];
+  for (const { bucket, region } of located) {
+    if (!REGIONS.includes(region as Region)) continue;
 
     resources.push({
       id: bucket.Name!,
       type: 's3-bucket',
       name: bucket.Name!,
-      region: bucketRegion,
+      region,
       service: 's3',
       status: 'active',
       createdAt: bucket.CreationDate?.toISOString(),
       managed: false,
-      metadata: {
-        bucketRegion,
-      },
+      metadata: { bucketRegion: region },
     });
   }
 

@@ -15,10 +15,7 @@ export function Sidebar() {
       <div className="p-5 border-b border-border">
         <div className="flex items-center gap-2.5">
           <CloudCog size={24} className="text-accent" />
-          <div>
-            <h1 className="text-base font-bold text-text-primary leading-tight">CloudVac</h1>
-            <p className="text-[10px] text-text-muted uppercase tracking-wider">Suck up the mess</p>
-          </div>
+          <h1 className="text-base font-bold text-text-primary leading-tight">CloudVac</h1>
         </div>
       </div>
 

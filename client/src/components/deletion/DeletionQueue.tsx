@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Trash2, Play, Eye, X } from 'lucide-react';
+import { Trash2, Play, Eye, X, TrendingDown } from 'lucide-react';
 import { useDeletionStore } from '../../stores/deletion-store';
 import { useScanStore } from '../../stores/scan-store';
+import { useCostStore } from '../../stores/cost-store';
 import { useDeletion } from '../../hooks/use-deletion';
 import { ServiceIcon } from '../shared/ServiceIcon';
 import { Badge } from '../shared/Badge';
 import { ConfirmDialog } from '../shared/ConfirmDialog';
 import { DeletionProgress } from './DeletionProgress';
 import { EmptyState } from '../shared/EmptyState';
+import { formatCurrency, formatEstimate } from '../../lib/format';
 
 export function DeletionQueue() {
   const queue = useDeletionStore((s) => s.queue);
@@ -17,10 +19,20 @@ export function DeletionQueue() {
   const status = useDeletionStore((s) => s.status);
   const steps = useDeletionStore((s) => s.steps);
   const resources = useScanStore((s) => s.resources);
+  const estimates = useCostStore((s) => s.estimates);
+  const total = useCostStore((s) => s.total);
   const { executeDeletion } = useDeletion();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const queuedResources = resources.filter((r) => queue.includes(r.id));
+
+  // Calculate savings from queued resources
+  const estimatedSavings = queuedResources.reduce((sum, r) => {
+    const est = estimates[r.id];
+    return est != null && est > 0 ? sum + est : sum;
+  }, 0);
+  const resourcesWithEstimate = queuedResources.filter((r) => estimates[r.id] != null).length;
+  const resourcesWithoutEstimate = queuedResources.length - resourcesWithEstimate;
 
   if (queue.length === 0 && status === 'idle') {
     return (
@@ -38,6 +50,40 @@ export function DeletionQueue() {
 
   return (
     <div className="space-y-4">
+      {/* Savings summary banner */}
+      {estimatedSavings > 0 && (
+        <div className="bg-bg-secondary rounded-xl border border-border overflow-hidden">
+          <div className="px-5 py-4 flex items-center gap-6">
+            <div className="p-2 bg-success/15 rounded-lg">
+              <TrendingDown size={20} className="text-success" />
+            </div>
+            <div className="flex-1 grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-0.5">Current Bill</p>
+                <p className="text-lg font-semibold text-text-primary font-mono">{total > 0 ? `${formatCurrency(total)}/mo` : '\u2014'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-0.5">Est. Savings</p>
+                <p className="text-lg font-semibold text-success font-mono">-{formatCurrency(estimatedSavings)}/mo</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-text-muted font-medium mb-0.5">Projected Bill</p>
+                <p className="text-lg font-semibold text-text-primary font-mono">
+                  {total > 0 ? `${formatCurrency(Math.max(0, total - estimatedSavings))}/mo` : '\u2014'}
+                </p>
+              </div>
+            </div>
+          </div>
+          {resourcesWithoutEstimate > 0 && (
+            <div className="px-5 py-2 border-t border-border/50 bg-bg-tertiary/30">
+              <p className="text-[11px] text-text-muted">
+                Estimates available for {resourcesWithEstimate} of {queuedResources.length} queued resources. {resourcesWithoutEstimate} resource(s) could not be estimated.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Controls */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{queue.length} resource(s) queued</h2>
@@ -80,6 +126,9 @@ export function DeletionQueue() {
               <span className="text-sm font-medium text-text-primary">{r.name}</span>
               <p className="text-xs text-text-muted">{r.type} in {r.region}</p>
             </div>
+            {estimates[r.id] != null && (
+              <span className="text-xs font-mono text-text-secondary mr-3">{formatEstimate(estimates[r.id])}/mo</span>
+            )}
             <Badge label={r.managed ? 'Managed' : 'Loose'} variant={r.managed ? 'managed' : 'loose'} />
             <button
               onClick={() => removeFromQueue(r.id)}

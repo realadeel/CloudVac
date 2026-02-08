@@ -4,6 +4,8 @@
 
 CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, shows your cost breakdown, and handles dependency-aware deletion with dry-run safety. Everything runs locally. Nothing phones home.
 
+![CloudVac screenshot](docs/screenshot.png)
+
 ---
 
 ## Table of Contents
