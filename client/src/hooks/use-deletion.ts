@@ -7,7 +7,7 @@ import { useLogStore } from '../stores/log-store';
 
 export function useDeletion() {
   const profile = useProfileStore((s) => s.selectedProfile);
-  const { queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError } = useDeletionStore();
+  const { queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue } = useDeletionStore();
   const addLog = useLogStore((s) => s.addLog);
 
   const executeDeletion = useCallback(async () => {
@@ -48,6 +48,7 @@ export function useDeletion() {
         },
         deleted: (data: any) => {
           updateStep(data.id, { status: 'deleted', duration: data.duration });
+          removeFromQueue(data.id);
           setProgress(data.progress ?? 0);
           addLog({ level: 'success', message: `Deleted: ${data.name} (${data.duration}ms)` });
         },
@@ -74,7 +75,7 @@ export function useDeletion() {
       setError((err as Error).message);
       addLog({ level: 'error', message: `Failed to start deletion: ${(err as Error).message}` });
     }
-  }, [profile, queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, addLog]);
+  }, [profile, queue, dryRun, setJobId, setStatus, setSteps, updateStep, setWarnings, setProgress, setError, removeFromQueue, addLog]);
 
   return { executeDeletion };
 }
