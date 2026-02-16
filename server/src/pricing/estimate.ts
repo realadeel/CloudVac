@@ -19,10 +19,11 @@ import {
   CW_LOG_STORAGE_PER_GB,
   CW_ALARM_STANDARD,
   S3_STORAGE_PER_GB,
+  type PricingService,
 } from './rates.js';
 
-function multiplier(region: string): number {
-  return REGIONAL_MULTIPLIERS[region] ?? 1.0;
+function multiplier(region: string, service: PricingService): number {
+  return REGIONAL_MULTIPLIERS[service]?.[region] ?? 1.0;
 }
 
 /**
@@ -36,14 +37,14 @@ export function estimateMonthlyCost(
   bucketStats?: { totalSize: number } | null,
 ): number | null {
   const m = resource.metadata;
-  const mul = multiplier(resource.region);
+  const r = resource.region;
 
   switch (resource.type) {
     // -----------------------------------------------------------------------
     case 'ec2-instance': {
       const rate = EC2_HOURLY[m.instanceType as string];
       if (rate == null) return null;
-      return +(rate * HOURS_PER_MONTH * mul).toFixed(2);
+      return +(rate * HOURS_PER_MONTH * multiplier(r, 'ec2')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
@@ -71,7 +72,7 @@ export function estimateMonthlyCost(
         }
       }
 
-      return +(cost * mul).toFixed(2);
+      return +(cost * multiplier(r, 'ebs')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
@@ -89,7 +90,7 @@ export function estimateMonthlyCost(
       const storageCost = RDS_STORAGE_PER_GB[storageType] ?? RDS_STORAGE_PER_GB.gp2;
       cost += storageCost * storageGB;
 
-      return +(cost * mul).toFixed(2);
+      return +(cost * multiplier(r, 'rds')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
@@ -99,24 +100,24 @@ export function estimateMonthlyCost(
 
     // -----------------------------------------------------------------------
     case 'nat-gateway':
-      return +(NAT_HOURLY * HOURS_PER_MONTH * mul).toFixed(2);
+      return +(NAT_HOURLY * HOURS_PER_MONTH * multiplier(r, 'nat')).toFixed(2);
 
     // -----------------------------------------------------------------------
     case 'elastic-ip': {
       const associated = m.associated as boolean;
       if (associated) return 0;
-      return +(EIP_UNUSED_HOURLY * HOURS_PER_MONTH * mul).toFixed(2);
+      return +(EIP_UNUSED_HOURLY * HOURS_PER_MONTH * multiplier(r, 'eip')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
     case 'alb':
     case 'nlb': {
       const rate = ELB_HOURLY.alb;
-      return +(rate * HOURS_PER_MONTH * mul).toFixed(2);
+      return +(rate * HOURS_PER_MONTH * multiplier(r, 'elb')).toFixed(2);
     }
 
     case 'clb':
-      return +(ELB_HOURLY.clb * HOURS_PER_MONTH * mul).toFixed(2);
+      return +(ELB_HOURLY.clb * HOURS_PER_MONTH * multiplier(r, 'elb')).toFixed(2);
 
     // -----------------------------------------------------------------------
     case 'dynamodb-table': {
@@ -133,25 +134,25 @@ export function estimateMonthlyCost(
         wcu * DYNAMODB_WCU_HOURLY * HOURS_PER_MONTH +
         sizeGB * DYNAMODB_STORAGE_PER_GB;
 
-      return +(cost * mul).toFixed(2);
+      return +(cost * multiplier(r, 'dynamodb')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
     case 'cloudwatch-log-group': {
       const storedBytes = (m.storedBytes as number) ?? 0;
       const storedGB = storedBytes / 1e9;
-      return +(storedGB * CW_LOG_STORAGE_PER_GB * mul).toFixed(2);
+      return +(storedGB * CW_LOG_STORAGE_PER_GB * multiplier(r, 'cloudwatch')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------
     case 'cloudwatch-alarm':
-      return +(CW_ALARM_STANDARD * mul).toFixed(2);
+      return +(CW_ALARM_STANDARD * multiplier(r, 'cloudwatch')).toFixed(2);
 
     // -----------------------------------------------------------------------
     case 's3-bucket': {
       if (!bucketStats) return null;
       const sizeGB = bucketStats.totalSize / 1e9;
-      return +(sizeGB * S3_STORAGE_PER_GB * mul).toFixed(2);
+      return +(sizeGB * S3_STORAGE_PER_GB * multiplier(r, 's3')).toFixed(2);
     }
 
     // -----------------------------------------------------------------------

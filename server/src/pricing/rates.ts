@@ -1,15 +1,84 @@
 // Static AWS on-demand pricing — us-east-1 baseline, hourly rates unless noted.
 // Last updated: 2025-02. Prices from https://aws.amazon.com/ec2/pricing/on-demand/
-// Update this file periodically; rates rarely change for established instance types.
+//
+// IMPORTANT: These are approximate estimates. Always consult the latest AWS pricing
+// pages for exact rates. Update the values in this file for more accurate pricing.
+// Rates rarely change for established instance types, but regional multipliers and
+// newer instance families may drift over time.
 
 export const HOURS_PER_MONTH = 730;
 
-/** Regional price multiplier relative to us-east-1. */
-export const REGIONAL_MULTIPLIERS: Record<string, number> = {
-  'us-east-1': 1.0,
-  'us-east-2': 1.0,
-  'us-west-1': 1.1,
-  'us-west-2': 1.0,
+/**
+ * Per-service regional price multipliers relative to us-east-1.
+ * These are approximate — always consult the latest AWS pricing pages for exact rates.
+ * Sources: AWS on-demand pricing pages, Feb 2025.
+ */
+export type PricingService = 'ec2' | 'ebs' | 'rds' | 'nat' | 'eip' | 'elb' | 'dynamodb' | 'cloudwatch' | 's3';
+
+export const REGIONAL_MULTIPLIERS: Record<PricingService, Record<string, number>> = {
+  ec2: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.17, 'us-west-2': 1.0,
+    'ca-central-1': 1.10, 'eu-west-1': 1.13, 'eu-west-2': 1.18, 'eu-west-3': 1.17,
+    'eu-central-1': 1.13, 'eu-north-1': 1.04, 'ap-northeast-1': 1.31, 'ap-northeast-2': 1.27,
+    'ap-northeast-3': 1.31, 'ap-southeast-1': 1.13, 'ap-southeast-2': 1.23, 'ap-south-1': 1.04,
+    'sa-east-1': 1.62, 'ap-east-1': 1.27, 'me-south-1': 1.20, 'af-south-1': 1.29,
+  },
+  ebs: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.13, 'us-west-2': 1.0,
+    'ca-central-1': 1.10, 'eu-west-1': 1.10, 'eu-west-2': 1.13, 'eu-west-3': 1.13,
+    'eu-central-1': 1.10, 'eu-north-1': 1.03, 'ap-northeast-1': 1.20, 'ap-northeast-2': 1.19,
+    'ap-northeast-3': 1.20, 'ap-southeast-1': 1.13, 'ap-southeast-2': 1.20, 'ap-south-1': 1.03,
+    'sa-east-1': 1.50, 'ap-east-1': 1.19, 'me-south-1': 1.16, 'af-south-1': 1.21,
+  },
+  rds: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.15, 'us-west-2': 1.0,
+    'ca-central-1': 1.10, 'eu-west-1': 1.12, 'eu-west-2': 1.16, 'eu-west-3': 1.15,
+    'eu-central-1': 1.12, 'eu-north-1': 1.04, 'ap-northeast-1': 1.28, 'ap-northeast-2': 1.24,
+    'ap-northeast-3': 1.28, 'ap-southeast-1': 1.12, 'ap-southeast-2': 1.22, 'ap-south-1': 1.04,
+    'sa-east-1': 1.56, 'ap-east-1': 1.24, 'me-south-1': 1.18, 'af-south-1': 1.26,
+  },
+  nat: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.11, 'us-west-2': 1.0,
+    'ca-central-1': 1.0, 'eu-west-1': 1.0, 'eu-west-2': 1.11, 'eu-west-3': 1.11,
+    'eu-central-1': 1.0, 'eu-north-1': 1.0, 'ap-northeast-1': 1.22, 'ap-northeast-2': 1.13,
+    'ap-northeast-3': 1.22, 'ap-southeast-1': 1.0, 'ap-southeast-2': 1.11, 'ap-south-1': 1.0,
+    'sa-east-1': 1.33, 'ap-east-1': 1.13, 'me-south-1': 1.11, 'af-south-1': 1.22,
+  },
+  eip: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.0, 'us-west-2': 1.0,
+    'ca-central-1': 1.0, 'eu-west-1': 1.0, 'eu-west-2': 1.0, 'eu-west-3': 1.0,
+    'eu-central-1': 1.0, 'eu-north-1': 1.0, 'ap-northeast-1': 1.0, 'ap-northeast-2': 1.0,
+    'ap-northeast-3': 1.0, 'ap-southeast-1': 1.0, 'ap-southeast-2': 1.0, 'ap-south-1': 1.0,
+    'sa-east-1': 1.0, 'ap-east-1': 1.0, 'me-south-1': 1.0, 'af-south-1': 1.0,
+  },
+  elb: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.11, 'us-west-2': 1.0,
+    'ca-central-1': 1.0, 'eu-west-1': 1.0, 'eu-west-2': 1.11, 'eu-west-3': 1.11,
+    'eu-central-1': 1.0, 'eu-north-1': 1.0, 'ap-northeast-1': 1.22, 'ap-northeast-2': 1.11,
+    'ap-northeast-3': 1.22, 'ap-southeast-1': 1.0, 'ap-southeast-2': 1.11, 'ap-south-1': 1.0,
+    'sa-east-1': 1.33, 'ap-east-1': 1.11, 'me-south-1': 1.11, 'af-south-1': 1.22,
+  },
+  dynamodb: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.15, 'us-west-2': 1.0,
+    'ca-central-1': 1.15, 'eu-west-1': 1.15, 'eu-west-2': 1.21, 'eu-west-3': 1.17,
+    'eu-central-1': 1.15, 'eu-north-1': 1.08, 'ap-northeast-1': 1.36, 'ap-northeast-2': 1.30,
+    'ap-northeast-3': 1.36, 'ap-southeast-1': 1.15, 'ap-southeast-2': 1.21, 'ap-south-1': 1.08,
+    'sa-east-1': 1.63, 'ap-east-1': 1.30, 'me-south-1': 1.25, 'af-south-1': 1.30,
+  },
+  cloudwatch: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.0, 'us-west-2': 1.0,
+    'ca-central-1': 1.0, 'eu-west-1': 1.0, 'eu-west-2': 1.0, 'eu-west-3': 1.0,
+    'eu-central-1': 1.0, 'eu-north-1': 1.0, 'ap-northeast-1': 1.0, 'ap-northeast-2': 1.0,
+    'ap-northeast-3': 1.0, 'ap-southeast-1': 1.0, 'ap-southeast-2': 1.0, 'ap-south-1': 1.0,
+    'sa-east-1': 1.0, 'ap-east-1': 1.0, 'me-south-1': 1.0, 'af-south-1': 1.0,
+  },
+  s3: {
+    'us-east-1': 1.0, 'us-east-2': 1.0, 'us-west-1': 1.09, 'us-west-2': 1.0,
+    'ca-central-1': 1.04, 'eu-west-1': 1.04, 'eu-west-2': 1.09, 'eu-west-3': 1.09,
+    'eu-central-1': 1.04, 'eu-north-1': 1.04, 'ap-northeast-1': 1.09, 'ap-northeast-2': 1.09,
+    'ap-northeast-3': 1.09, 'ap-southeast-1': 1.04, 'ap-southeast-2': 1.09, 'ap-south-1': 1.04,
+    'sa-east-1': 1.39, 'ap-east-1': 1.09, 'me-south-1': 1.09, 'af-south-1': 1.17,
+  },
 };
 
 // ---------------------------------------------------------------------------

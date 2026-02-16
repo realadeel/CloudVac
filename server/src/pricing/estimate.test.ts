@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { estimateMonthlyCost } from './estimate.js';
 import {
   HOURS_PER_MONTH,
+  REGIONAL_MULTIPLIERS,
   EC2_HOURLY,
   EBS_PER_GB,
   NAT_HOURLY,
@@ -62,7 +63,8 @@ describe('EC2 instances', () => {
       metadata: { instanceType: 't3.micro' },
     });
     const cost = estimateMonthlyCost(r);
-    expect(cost).toBe(+(EC2_HOURLY['t3.micro'] * HOURS_PER_MONTH * 1.1).toFixed(2));
+    const mul = REGIONAL_MULTIPLIERS.ec2['us-west-1'];
+    expect(cost).toBe(+(EC2_HOURLY['t3.micro'] * HOURS_PER_MONTH * mul).toFixed(2));
   });
 
   it('returns null for unknown instance type', () => {
@@ -195,7 +197,8 @@ describe('NAT Gateway', () => {
 
   it('applies regional multiplier', () => {
     const r = makeResource({ type: 'nat-gateway', region: 'us-west-1' });
-    expect(estimateMonthlyCost(r)).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * 1.1).toFixed(2));
+    const mul = REGIONAL_MULTIPLIERS.nat['us-west-1'];
+    expect(estimateMonthlyCost(r)).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * mul).toFixed(2));
   });
 });
 
@@ -347,20 +350,40 @@ describe('CloudFormation stacks', () => {
 // Regional multiplier
 // ---------------------------------------------------------------------------
 describe('Regional multipliers', () => {
-  it('us-east-1 multiplier is 1.0', () => {
+  it('us-east-1 multiplier is 1.0 for all services', () => {
     const r = makeResource({ type: 'nat-gateway', region: 'us-east-1' });
     const cost = estimateMonthlyCost(r)!;
     expect(cost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * 1.0).toFixed(2));
   });
 
-  it('us-west-1 multiplier is 1.1', () => {
+  it('us-west-1 uses per-service multiplier', () => {
     const r = makeResource({ type: 'nat-gateway', region: 'us-west-1' });
     const cost = estimateMonthlyCost(r)!;
-    expect(cost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * 1.1).toFixed(2));
+    const mul = REGIONAL_MULTIPLIERS.nat['us-west-1'];
+    expect(cost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * mul).toFixed(2));
+  });
+
+  it('different services get different multipliers in the same region', () => {
+    const ec2 = makeResource({
+      type: 'ec2-instance',
+      region: 'ap-northeast-1',
+      metadata: { instanceType: 't3.micro' },
+    });
+    const nat = makeResource({ type: 'nat-gateway', region: 'ap-northeast-1' });
+
+    const ec2Cost = estimateMonthlyCost(ec2)!;
+    const natCost = estimateMonthlyCost(nat)!;
+
+    const ec2Mul = REGIONAL_MULTIPLIERS.ec2['ap-northeast-1'];
+    const natMul = REGIONAL_MULTIPLIERS.nat['ap-northeast-1'];
+
+    expect(ec2Cost).toBe(+(EC2_HOURLY['t3.micro'] * HOURS_PER_MONTH * ec2Mul).toFixed(2));
+    expect(natCost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * natMul).toFixed(2));
+    expect(ec2Mul).not.toBe(natMul);
   });
 
   it('unknown region defaults to 1.0', () => {
-    const r = makeResource({ type: 'nat-gateway', region: 'eu-west-1' });
+    const r = makeResource({ type: 'nat-gateway', region: 'xx-unknown-1' });
     const cost = estimateMonthlyCost(r)!;
     expect(cost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * 1.0).toFixed(2));
   });
