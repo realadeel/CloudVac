@@ -387,4 +387,56 @@ describe('Regional multipliers', () => {
     const cost = estimateMonthlyCost(r)!;
     expect(cost).toBe(+(NAT_HOURLY * HOURS_PER_MONTH * 1.0).toFixed(2));
   });
+
+  it('applies EBS multiplier for sa-east-1', () => {
+    const r = makeResource({
+      type: 'ebs-volume',
+      region: 'sa-east-1',
+      metadata: { volumeType: 'gp2', size: 100 },
+    });
+    const cost = estimateMonthlyCost(r)!;
+    const mul = REGIONAL_MULTIPLIERS.ebs['sa-east-1'];
+    expect(cost).toBe(+(EBS_PER_GB.gp2 * 100 * mul).toFixed(2));
+  });
+
+  it('applies RDS multiplier for ap-southeast-2', () => {
+    const r = makeResource({
+      type: 'rds-instance',
+      region: 'ap-southeast-2',
+      metadata: { instanceClass: 'db.t3.micro', allocatedStorage: 20, storageType: 'gp2' },
+    });
+    const cost = estimateMonthlyCost(r)!;
+    const mul = REGIONAL_MULTIPLIERS.rds['ap-southeast-2'];
+    const expected = (RDS_HOURLY['db.t3.micro'] * HOURS_PER_MONTH + RDS_STORAGE_PER_GB.gp2 * 20) * mul;
+    expect(cost).toBe(+expected.toFixed(2));
+  });
+
+  it('applies ELB multiplier for eu-west-2', () => {
+    const r = makeResource({ type: 'alb', region: 'eu-west-2' });
+    const cost = estimateMonthlyCost(r)!;
+    const mul = REGIONAL_MULTIPLIERS.elb['eu-west-2'];
+    expect(cost).toBe(+(ELB_HOURLY.alb * HOURS_PER_MONTH * mul).toFixed(2));
+  });
+
+  it('applies DynamoDB multiplier for sa-east-1', () => {
+    const r = makeResource({
+      type: 'dynamodb-table',
+      region: 'sa-east-1',
+      metadata: { billingMode: 'PROVISIONED', readCapacity: 10, writeCapacity: 5, sizeBytes: 1e9 },
+    });
+    const cost = estimateMonthlyCost(r)!;
+    const mul = REGIONAL_MULTIPLIERS.dynamodb['sa-east-1'];
+    const base =
+      10 * DYNAMODB_RCU_HOURLY * HOURS_PER_MONTH +
+      5 * DYNAMODB_WCU_HOURLY * HOURS_PER_MONTH +
+      1 * DYNAMODB_STORAGE_PER_GB;
+    expect(cost).toBe(+(base * mul).toFixed(2));
+  });
+
+  it('applies S3 multiplier for af-south-1', () => {
+    const r = makeResource({ type: 's3-bucket', region: 'af-south-1' });
+    const cost = estimateMonthlyCost(r, { totalSize: 100e9 })!;
+    const mul = REGIONAL_MULTIPLIERS.s3['af-south-1'];
+    expect(cost).toBe(+(100 * S3_STORAGE_PER_GB * mul).toFixed(2));
+  });
 });
