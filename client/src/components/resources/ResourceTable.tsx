@@ -21,7 +21,7 @@ const COLUMNS: { key: SortKey; label: string; className: string; hideOnMobile?: 
   { key: 'service', label: 'Type', className: 'min-w-[80px] flex-1' },
   { key: 'region', label: 'Region', className: 'min-w-[90px] flex-1', hideOnMobile: true },
   { key: 'status', label: 'Status', className: 'min-w-[80px] flex-1', hideOnMobile: true },
-  { key: 'estimatedCost', label: 'Est. Cost', className: 'min-w-[70px] flex-1' },
+  { key: 'estimatedCost', label: 'Est. Cost*', className: 'min-w-[70px] flex-1' },
   { key: 'createdAt', label: 'Created', className: 'min-w-[80px] flex-1', hideOnMobile: true },
 ];
 
@@ -272,7 +272,7 @@ export function ResourceTable() {
 
         {/* Footer */}
         <div className="px-4 py-2 border-t border-border bg-bg-tertiary/50 flex items-center justify-between">
-          <span className="text-xs text-text-muted">{filtered.length} resource(s)</span>
+          <span className="text-xs text-text-muted">{filtered.length} resource(s) <span className="hidden sm:inline ml-2 opacity-60">*Costs are approximate — consult AWS pricing for exact rates</span></span>
           {queue.length > 0 && (
             <button
               onClick={() => navigate('/deletion')}

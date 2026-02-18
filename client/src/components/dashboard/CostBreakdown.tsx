@@ -108,6 +108,7 @@ export function CostBreakdown() {
               </div>
             );
           })}
+          <p className="text-[10px] text-text-muted/60 pt-2">Estimates are approximate. Consult AWS pricing for exact rates.</p>
         </div>
       )}
     </div>
