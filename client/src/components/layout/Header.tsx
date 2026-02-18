@@ -62,19 +62,22 @@ export function Header() {
     <header className="h-14 bg-bg-secondary border-b border-border flex items-center justify-between px-3 sm:px-4 md:px-6 fixed top-0 left-0 md:left-56 right-0 z-10">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0 pl-10 md:pl-0">
         {/* Profile selector */}
-        <div className="relative shrink-0">
-          <select
-            value={selectedProfile ?? ''}
-            onChange={(e) => handleProfileChange(e.target.value)}
-            className="appearance-none bg-bg-tertiary border border-border rounded-lg px-3 py-1.5 pr-8 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer max-w-[140px] sm:max-w-none"
-          >
-            {profiles.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm text-text-muted hidden lg:inline">AWS Profile:</span>
+          <div className="relative">
+            <select
+              value={selectedProfile ?? ''}
+              onChange={(e) => handleProfileChange(e.target.value)}
+              className="appearance-none bg-bg-tertiary border border-border rounded-lg px-3 py-1.5 pr-8 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer max-w-[140px] sm:max-w-none"
+            >
+              {profiles.map((p) => (
+                <option key={p.name} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+          </div>
         </div>
 
         {/* Scan progress */}
@@ -99,6 +102,7 @@ export function Header() {
         {/* Dry-run toggle */}
         <button
           onClick={toggleDryRun}
+          title={dryRun ? 'Dry Run: Preview deletions without actually removing resources' : 'LIVE Mode: Deletions will permanently remove AWS resources'}
           className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
             dryRun
               ? 'bg-success/10 text-success border-success/30 hover:bg-success/20'
