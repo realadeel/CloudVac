@@ -20,7 +20,7 @@
 
 ---
 
-CloudVac reads your local `~/.aws/credentials`, scans 14 services across 4 US regions, identifies CloudFormation-managed vs. orphaned resources, estimates per-resource costs, detects orphaned CloudWatch log groups, and handles dependency-aware deletion with dry-run safety.
+CloudVac reads your local `~/.aws/credentials`, scans 14 services across 20 AWS regions, identifies CloudFormation-managed vs. orphaned resources, estimates per-resource costs with per-service regional pricing multipliers, detects orphaned CloudWatch log groups, and handles dependency-aware deletion with dry-run safety.
 
 Everything runs locally. No telemetry. No external calls. Your credentials never leave your machine.
 
@@ -292,7 +292,9 @@ You can scope `Resource` to specific ARNs or use conditions to restrict which ac
 
 ## Services Scanned
 
-14 services across 4 US regions (`us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`):
+14 services across 20 AWS regions:
+
+**US:** `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2` · **Canada:** `ca-central-1` · **Europe:** `eu-west-1`, `eu-west-2`, `eu-west-3`, `eu-central-1`, `eu-north-1` · **Asia Pacific:** `ap-northeast-1`, `ap-northeast-2`, `ap-northeast-3`, `ap-southeast-1`, `ap-southeast-2`, `ap-south-1`, `ap-east-1` · **South America:** `sa-east-1` · **Middle East:** `me-south-1` · **Africa:** `af-south-1`
 
 | Service | Resources Found |
 |---|---|
@@ -371,7 +373,7 @@ CloudVac provides per-resource monthly cost estimates using static on-demand pri
 | **VPC, Subnet, SG, IGW, Route Table** | Free |
 | **CF Stacks** | N/A (cost is in child resources) |
 
-When you queue resources for deletion, the **savings banner** shows your current bill, estimated monthly savings, and projected bill after cleanup. Regional multipliers are applied for `us-west-1` (10% premium).
+When you queue resources for deletion, the **savings banner** shows your current bill, estimated monthly savings, and projected bill after cleanup. Per-service regional pricing multipliers are applied across all 20 regions (e.g., `sa-east-1` carries a 29–63% premium depending on the service, while `us-east-1` is the baseline).
 
 ---
 
@@ -464,7 +466,7 @@ cloudvac/
 |---|---|---|
 | `/api/health` | GET | Health check |
 | `/api/profiles` | GET | List AWS profiles (names + regions only, no credentials) |
-| `/api/scan?profile=X` | GET | SSE stream: scans 14 services across 4 regions |
+| `/api/scan?profile=X` | GET | SSE stream: scans 14 services across 20 regions |
 | `/api/resources?profile=X` | GET | Cached scan results with optional filters |
 | `/api/resources/:id?profile=X` | GET | Single resource by ID |
 | `/api/costs?profile=X` | GET | 30-day cost breakdown (cached; `&refresh=true` to force) |
